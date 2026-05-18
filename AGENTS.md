@@ -8,7 +8,8 @@ Conventions any agent (Claude, Cursor, Windsurf, human contributor) should follo
 
 In-scope files (rough guide):
 - `GeoTestARScene/GeoTestARScene/ARViewController.swift` and any new AR-only types it spawns
-- `GeoTestARScene/GeoTestARScene/Models.swift` and `models_to_place.json` parsing (consumed by AR)
+- `GeoTestARScene/GeoTestARScene/Spike/` — Phase 02 M02.0 throwaway code; gated by `SHOW_SPIKE_MENU=1` env var; deleted after spikes complete. See `docs/phases/Phase02_Spike_Playbook.md`.
+- `GeoTestARScene/GeoTestARScene/Models.swift` and the canonical `models_to_place.json` schema (which iOS reads from the bundle via the M02.3 build phase, not from the iOS source tree)
 - AR feature flags, AR HUD overlays, AR-only utility files under `utilities/`
 - Build-phase scripts that copy shared data from the webgl submodule into the iOS bundle
 - Docs under `docs/phases/`, `docs/research/`

@@ -40,15 +40,25 @@ Free quota is 1,000 sessions/min and 100,000 requests/min — plenty for the spi
 
 ### 0.4 Store the API key (gitignored)
 
-Create `GeoTestARScene/xcconfigs/APIKeys.local.xcconfig` (this path is in `.gitignore`):
+`*.local.xcconfig` is already gitignored. Wire the key in four small steps:
 
-```
-ARCORE_API_KEY = YOUR_KEY_HERE
-```
+1. **Create the folder if missing** (it's not in git):
+   ```bash
+   mkdir -p GeoTestARScene/xcconfigs
+   ```
+2. **Create the file** `GeoTestARScene/xcconfigs/APIKeys.local.xcconfig` with:
+   ```
+   ARCORE_API_KEY = YOUR_KEY_HERE
+   ```
+3. **Wire the xcconfig to the target's build configurations** (Xcode UI):
+   - Project navigator → click the **project** (top-level "GeoTestARScene", blue icon, not the target).
+   - **Info** tab → **Configurations** section.
+   - For both **Debug** and **Release**, under the **GeoTestARScene** target column, click the dropdown and select `APIKeys.local`. If the file isn't listed, add it to the project first (File → Add Files…), then it appears in the dropdown.
+4. **Expose to runtime via Info.plist**:
+   - GeoTestARScene target → **Info** tab.
+   - Add a row: Key = `ARCORE_API_KEY`, Type = `String`, Value = `$(ARCORE_API_KEY)`. The `$(…)` syntax pulls from the xcconfig at build time.
 
-In Xcode, set the GeoTestARScene target's **Info.plist** to expose this via an `ARCORE_API_KEY` `String` entry whose value is `$(ARCORE_API_KEY)`. The spike code reads `Bundle.main.object(forInfoDictionaryKey: "ARCORE_API_KEY") as? String`.
-
-Alternative for quick spike testing only: hardcode the key in `SpikeAViewController.swift` at the marked `// HACK:` line and never commit the change. The branch is throwaway so this is acceptable; just don't push.
+The spike code reads `Bundle.main.object(forInfoDictionaryKey: "ARCORE_API_KEY") as? String`. Quick-test alternative (don't commit): paste the key inline at the `// HACK:` line in `SpikeAViewController.swift`.
 
 ### 0.5 Add the Spike sources to the Xcode project
 
@@ -158,6 +168,16 @@ Once all three sections are filled in:
 
 - Commit the results doc directly to `main` (this is a solo-dev workflow; no PR required).
 - The spike code stays on `main` until M02.1 begins. At that point: delete the `Spike/` folder, remove the `// SPIKE:` hook in `ARViewController.swift`, and drop the `SHOW_SPIKE_MENU` env var from the scheme — one cleanup commit.
+
+## 4.5 Known limitations / things you may have to adapt
+
+These are honest gaps to expect during the spike. None block the spike itself; they're warnings so you don't burn time blaming the code when the SDK behaves slightly differently.
+
+- **ARCore Swift API drift**. Spike A uses `GARSession(apiKey:bundleIdentifier:)` and `garFrame.streetscapeGeometries`. Different SDK versions sometimes spell these slightly differently (`GARSession.session(apiKey:bundleIdentifier:error:)`, etc.) and Swift bridging adds its own twists. If the Spike A file shows a small compile error after adding the package, fix the offending method call to whatever the installed SDK exposes — the names will be discoverable from the autocomplete or from the SDK's `GARSession.h`. Don't change the surrounding logic.
+- **`GARSession.earth` nullability**. In some SDK versions it's nullable. If you see a crash on `gar.earth`, change to `guard let earth = gar.earth else { return }` and pipe a "GAR.Earth: not ready yet" line into the HUD.
+- **`streetscapeGeometries` shape**. May be an `Array`, `Set`, or `NSSet`-bridged collection. Spike A only uses `.count`; Spike B's render path will need a stable iteration order — make a sorted array by `identifier` if needed.
+- **Normal AR flow currently broken**. Because `models_to_place.json` was removed from the iOS source tree in commit `995fafb` (it now lives canonically in `webgl-component/`), the regular AR flow will find no models until the M02.3 build phase lands. The spike code is unaffected — it doesn't read `models_to_place.json`.
+- **iOS Models.swift schema**. `LocationPoint` does not parse `sequence`, `model_ground_offset`, `model_scale_x/y/z` from the JSON. These fields are present in the canonical webgl `models_to_place.json` and are silently dropped on iOS today. The "ground offset" omission is the most consequential — content may sit at terrain level rather than its intended Y offset. Address in M02.3.
 
 ## 5. After the spike
 

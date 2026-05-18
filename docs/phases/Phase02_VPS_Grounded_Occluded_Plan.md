@@ -33,7 +33,7 @@ Both are M02.0 deliverables.
 
 ## 1. Success criteria (acceptance tests)
 
-The build is "Phase 02 done" when all four pass on a single test device on a documented NYC block:
+The build is "Phase 02 done" when all five pass on a single test device on a documented NYC block:
 
 | # | Test | Threshold |
 |---|---|---|
@@ -51,7 +51,7 @@ If any test fails by a wide margin, we revisit the architecture before patching.
 
 ```
                   ┌──────────────────────────────────────────────────┐
-                  │ ARMetalViewController-style host (KEEP SceneKit) │
+                  │ ARViewController (SceneKit + ARKit)              │
                   │                                                  │
                   │  ARSCNView (ARGeoTrackingConfiguration primary)  │
                   │     ├─ ARSession  →  GARSession  (frame-fed)     │
@@ -395,8 +395,15 @@ All M02.0 code is throwaway and removed in a cleanup commit before M02.1 begins.
 - **Verifies**: Reproducible sliding behavior is preserved + new node hierarchy works.
 
 ### M02.3 — Shared-data pipeline + GLTFKit2 + glb loading
-- **Do**: Add GLTFKit2 via Swift Package Manager. Add the build phase from §6 that copies `webgl-component/models_to_place.json` and `webgl-component/skypath_models/*.glb` into the bundle's `Models/` folder. Update `Models.swift` to read the placement JSON from `Bundle.main`'s `Models/` folder, and to resolve `model_variant` to `<modelsDir>/<variant>.glb` (no USDZ assumption). Replace USDZ load calls with `GLTFAsset.load(...)` + `SCNScene.sceneWithGLTFAsset:`. Use `skypath_column.glb` as the first end-to-end test (smallest file).
-- **Exit**: At least one model from the canonical (webgl-side) `models_to_place.json` loads and renders at its anchor location. Verify by changing the JSON in `webgl-component` on a feature branch + bumping the submodule + rebuilding — the iOS app picks up the change with no iOS-side edit.
+- **Do**:
+  - Add GLTFKit2 via Swift Package Manager.
+  - Add the build phase from §6 that copies `webgl-component/models_to_place.json` and `webgl-component/skypath_models/*.glb` into the bundle's `Models/` folder.
+  - Update `Models.swift::LocationPoint` to also parse `sequence`, `model_ground_offset`, `model_scale_x/y/z` (currently silently dropped) — these are present in the canonical JSON and the ground-offset in particular needs to be honored. Add corresponding properties to `ARModelLocation`.
+  - Update `ARViewController.loadLocationData()` and `ARModelLocation.getSequenceFor(id:)` in `ViewController.swift` to read the placement JSON from `Bundle.main`'s `Models/` folder rather than the bundle root (they currently call `Bundle.main.url(forResource: "models_to_place", withExtension: "json")` which expected the file at root).
+  - Resolve `model_variant` to `<modelsDir>/<variant>.glb` (no USDZ suffix).
+  - Replace USDZ load calls with `GLTFAsset.load(...)` + `SCNScene.sceneWithGLTFAsset:`. Apply `model_ground_offset` and `model_scale_*` to the loaded node's `simdTransform` at the placement step.
+  - Use `skypath_column.glb` as the first end-to-end test (smallest file at 2.6 MB).
+- **Exit**: At least one model from the canonical (webgl-side) `models_to_place.json` loads and renders at its anchor location with correct ground offset and scale. Verify by changing the JSON in `webgl-component` on a feature branch + bumping the submodule + rebuilding — the iOS app picks up the change with no iOS-side edit.
 - **Verifies**: Shared-data pipeline closes the loop with the webgl submodule. AC-0.
 
 ### M02.4 — `GARSession` parallel, Streetscape Geometry occluders

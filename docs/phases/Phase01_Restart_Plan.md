@@ -32,7 +32,9 @@ See [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan
 
 ## First measurable goal
 
-A clean device build of the restored SceneKit baseline running the existing `skypath_locations*.json` placement, plus a recorded field session that reproduces the sliding behavior in a documented way. From that ground-truth capture we'll write Phase 02 — and only then commit to a specific fix.
+A clean device build of the restored SceneKit baseline running the canonical `models_to_place.json` placement (consumed by `Models.swift` / `ARViewController.swift`), plus a recorded field session that reproduces the sliding behavior in a documented way. From that ground-truth capture we'll write Phase 02 — and only then commit to a specific fix.
+
+> Schema note: `iOS Models.swift.LocationPoint` parses these fields from the canonical JSON: `id`, `latitude`, `longitude`, `description`, `rotation`, `tilt`, `distance_to_next?`, `model_variant`, `model_column?`, `model_columnN_place?`. The webgl canonical JSON additionally carries `sequence`, `model_ground_offset`, `model_scale_x/y/z` — iOS currently ignores those silently. Whether iOS needs to honor them is an open Phase 02 question (probably yes for ground offset).
 
 The baseline will not run fully out of the box: the four largest USDZ models were stripped from the repo (see [`SHARED_DATA.md`](../../GeoTestARScene/GeoTestARScene/SHARED_DATA.md)). The Phase 02 build-phase pipeline (M02.3) closes that gap by pulling models from the webgl submodule.
 
