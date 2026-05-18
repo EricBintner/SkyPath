@@ -19,14 +19,16 @@ That track never reached working occlusion. The bridge code grew to ~3,000 lines
 - No Google Photorealistic 3D Tiles on the iOS side. (Tiles remain relevant for the webgl viewer — that's the webgl repo's call.)
 - No RealityKit migration in this phase.
 
-## What's TBD (Phase 02 will pick one per row)
+## Decisions made in Phase 02 (these were TBD when this doc was first written)
 
-| Question | Candidates | Notes |
-|---|---|---|
-| iOS asset pipeline | (a) runtime glb loader (GLTFKit2 → SceneKit); (b) build-time `glb → usdz` conversion; (c) maintain both formats by hand | (c) is rejected — that's the drift problem we're trying to avoid. |
-| Geo-pose stack | (a) stay on ARGeoTracking; (b) layer ARCore Geospatial (`GARSession`) on top; (c) move to ARCore primary | Research in `docs/research/VPS-research.md` §1 and `research-todos.md` §4. |
-| Architectural occlusion | (a) ARCore Streetscape Geometry (LOD1/LOD2 building meshes, iOS-supported); (b) ARKit LiDAR scene reconstruction (close-range only); (c) none in Phase 02 | Geospatial Depth API is Android-only — not on the table for iOS. |
-| "Sliding" root cause | yaw drift, GPS/VPS drift, anchor placement timing, compositing order | Need a reproducible field capture before designing a fix. |
+See [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan.md) for the full reasoning. Summary:
+
+| Question | Decision |
+|---|---|
+| iOS asset pipeline | **GLTFKit2** (Swift Package). Build phase copies `webgl-component/skypath_models/*.glb` into the iOS bundle. Single source of truth = webgl submodule. |
+| Geo-pose stack | **Apple `ARGeoTrackingConfiguration` primary** for placement; **ARCore `GARSession` in parallel** strictly to get Streetscape Geometry meshes and a numeric yaw-uncertainty signal. ARCore *Geospatial Anchors* are not used. |
+| Architectural occlusion | **ARCore Streetscape Geometry** (LOD2 building meshes) → SCNGeometry with depth-only SCNMaterial. LiDAR fusion deferred to Phase 03. |
+| "Sliding" root cause / fix | Mitigated by a single `earthFrame` SCNNode receiving bounded, stillness-gated EMA corrections — no `setWorldOrigin` resets. See Phase 02 §4. |
 
 ## First measurable goal
 
@@ -45,7 +47,8 @@ The baseline will not run fully out of the box: the four largest USDZ models wer
 - [x] WebGL component attached as submodule.
 - [x] Big USDZs stripped; `*.usdz` git-ignored except `skypath_001.usdz` (3.7 MB, kept as smoke-test asset).
 - [x] Phase 01 plan committed (this doc).
+- [x] Phase 02 plan drafted — see [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan.md).
 - [ ] Verify Xcode opens the project cleanly (no missing-file errors beyond expected USDZ gaps).
-- [ ] Decide and land the iOS asset pipeline (Phase 02 row 1).
-- [ ] Reproducible "sliding" capture in the field.
-- [ ] Phase 02 plan drafted.
+- [ ] Reproducible "sliding" capture in the field. (Now milestone M02.2.)
+
+> Phase 01 is the *restart-the-tree* phase. Phase 02 is the *make-it-work* phase. They share the repo state but distinct intent.

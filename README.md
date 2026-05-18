@@ -8,8 +8,8 @@ This repository is a **restart** of the SkyPath project. See [`docs/phases/Phase
 
 - `GeoTestARScene/` — iOS SceneKit + ARKit app (Xcode project)
 - `webgl-component/` — Standalone Cesium + Google Photorealistic 3D Tiles viewer; deployed to Vercel. Tracked here as a git submodule of [`EricBintner/cesium-google-3dtiles`](https://github.com/EricBintner/cesium-google-3dtiles). Also the **source of truth for 3D model assets** — see [`GeoTestARScene/GeoTestARScene/ASSETS.md`](GeoTestARScene/GeoTestARScene/ASSETS.md).
-- `docs/phases/` — Phased plans, in order. Read Phase 01 first.
-- `docs/research/` — Background research on VPS, ARKit GeoTracking, ARCore Geospatial, occlusion approaches. Carried forward from prior work.
+- `docs/phases/` — Phased plans, in order. Start with [Phase 01](docs/phases/Phase01_Restart_Plan.md) for the *why*, then [Phase 02](docs/phases/Phase02_VPS_Grounded_Occluded_Plan.md) for the *what we're building*.
+- `docs/research/` — Background research and citation index ([`references.md`](docs/research/references.md)) on VPS, ARKit GeoTracking, ARCore Geospatial, occlusion approaches. Carried forward from prior work.
 
 ## Cloning
 
