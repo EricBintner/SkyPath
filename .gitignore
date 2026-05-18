@@ -93,9 +93,12 @@ yarn-error.log
 # SourcePrep (local index, not for the repo)
 .sourceprep/
 
-# 3D model binaries — source of truth is webgl-component/skypath_models/*.glb.
-# See GeoTestARScene/GeoTestARScene/ASSETS.md for the asset strategy.
-# The small smoke-test asset is the only USDZ we keep in the repo.
+# Shared data (3D models + placement JSON) — source of truth is the
+# webgl-component submodule. iOS bundles copies via a build phase.
+# See GeoTestARScene/GeoTestARScene/SHARED_DATA.md for the full strategy.
 *.usdz
 !GeoTestARScene/GeoTestARScene/skypath_001.usdz
 *.glb
+# Note: models_to_place.json IS currently tracked on the iOS side as a
+# legacy bundled copy; that bundling moves to the build phase in M02.3,
+# at which point we'll add models_to_place.json to this gitignore too.

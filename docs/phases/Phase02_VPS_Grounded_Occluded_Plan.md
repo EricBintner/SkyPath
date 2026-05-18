@@ -4,6 +4,31 @@
 
 This phase produces a build that (a) does not slide noticeably while a user walks an NYC block and (b) occludes virtual content behind real buildings within ~80% of visible facades. No Metal renderer. No `cesium-native`. No Photorealistic 3D Tiles on-device.
 
+> **Conditionality.** The "Apple primary + Google for meshes" pose stack (§3) and the "SceneKit depth-only material" renderer choice (§5) are first-principles engineering, not validated by a shipping reference app for this specific combination. They are gated on M02.0 spike outcomes (§7). Fallback paths are documented.
+
+---
+
+## 0. Scope and architectural ground rules
+
+### Scope discipline — AR screen only
+
+All work in this plan touches the **AR screen surface only**: `ARViewController.swift`, models the AR code consumes, AR-specific feature flags, AR HUD overlays, the build phase that copies shared data into the iOS bundle, and docs.
+
+**Out of scope unless explicitly asked**: `MapViewController.swift`, `LocationsViewController.swift` and any WebView/Vercel wiring, `InfoViewController.swift`, `AppDelegate` / `SceneDelegate`, top-level navigation, anything inside the `webgl-component/` submodule. The Map and WebView work today and must not regress because of AR rebuild work.
+
+This is also recorded in `AGENTS.md` at the repo root.
+
+### Shared data — single source of truth
+
+The webgl submodule is canonical for **both** the `.glb` model binaries and the geospatial placement JSON. iOS consumes copies via a build phase. There are not two parallel copies of the same data to keep in sync — there is one, in the webgl repo, and iOS bumps a submodule commit to pick up changes. See §6 for the current state, the open reconciliation questions (the iOS and webgl `models_to_place.json` files have already drifted), and the build-phase mechanism.
+
+### What this plan does not commit to until the spike resolves
+
+- **Whether `ARGeoTrackingConfiguration` and `GARSession` can run together on iOS.** Google's iOS samples pair `GARSession` with `ARWorldTrackingConfiguration`. The combination we want is plausible but not documented.
+- **Whether SceneKit + Streetscape Geometry as depth-only occluder gives clean results at 50–100 m range**, or whether RealityKit's `OcclusionMaterial` is the cleaner path.
+
+Both are M02.0 deliverables.
+
 ---
 
 ## 1. Success criteria (acceptance tests)
@@ -12,7 +37,8 @@ The build is "Phase 02 done" when all four pass on a single test device on a doc
 
 | # | Test | Threshold |
 |---|---|---|
-| **AC-1** | Place 3 ARGeoAnchored objects from `skypath_locations.json`. Walk 50 m of the block forward, return, place a fresh checkpoint anchor, measure displacement of original anchors at their nominal latitude/longitude. | Lateral drift ≤ **1.0 m** |
+| **AC-0** | iOS reads its placement data from the canonical JSON copied out of `webgl-component/` via the build phase — not from a separate iOS-side file. Both the iOS app and the webgl viewer render the same model variants at the same coordinates. | No divergence. |
+| **AC-1** | Place 3 ARGeoAnchored objects from the canonical placement JSON. Walk 50 m of the block forward, return, place a fresh checkpoint anchor, measure displacement of original anchors at their nominal latitude/longitude. | Lateral drift ≤ **1.0 m** |
 | **AC-2** | Stand still at a documented spot. Look down a street with tall buildings on both sides. Slowly pan left↔right 90°. | Yaw error of placed anchors ≤ **3°** measured against a reference compass post. |
 | **AC-3** | Place content behind a building facade. Move so the facade is between camera and content. | Content correctly hidden for ≥ **80%** of facade pixel area. |
 | **AC-4** | 5-minute continuous walk-and-return loop. No reset/restart. | No user-visible "jump" > 30 cm or > 5° yaw at any moment. |
@@ -52,7 +78,9 @@ Three independent loops drive this:
 
 ---
 
-## 3. Pose strategy — "Apple primary, Google sanity-check"
+## 3. Pose strategy — "Apple primary, Google sanity-check" (gated on Spike A)
+
+> **Status.** This is the target pose stack. It is **conditional on Spike A in M02.0** confirming that `ARGeoTrackingConfiguration` and `GARSession` can coexist on iOS. Google's public iOS samples pair `GARSession` only with `ARWorldTrackingConfiguration`; the combination we want is not documented as supported or unsupported. If Spike A shows it doesn't work, the fallback (described at the end of this section) is `ARWorldTrackingConfiguration` + ARCore Geospatial pose as primary.
 
 ### Why hybrid
 
@@ -83,6 +111,18 @@ Apple sample code and the WWDC 2020 session 10611 walk-through document this lif
 Geospatial Anchors (`GARAnchor` of type WGS84/Terrain/Rooftop) give us nothing ARGeoAnchor doesn't already give us in NYC, and they require server resolution (asynchronous, returns `GARFutureState`). Apple's geo-anchors are synchronous, automatically tracked, and update their transforms on the ARSession delegate. We use Apple anchors. Period.
 
 We **do** use Streetscape Geometry. See §5.
+
+### Fallback if Spike A fails
+
+If `GARSession` cannot run alongside `ARGeoTrackingConfiguration`:
+
+1. Switch the ARSession to `ARWorldTrackingConfiguration` (no Apple geo).
+2. Use `GARSession`'s `earth.cameraGeospatialTransform` as the only absolute pose.
+3. Place content via `GARAnchor` of type `Rooftop` or `Terrain` instead of `ARGeoAnchor`.
+4. Lose Apple's tight geo-anchor delegate updates; gain Google's numeric accuracy fields and reach.
+5. The anti-sliding architecture (§4) is unchanged — `earthFrame` still absorbs correction. The source of corrections becomes Google's `GARGeospatialTransform` updates instead of Apple's anchor delegates.
+
+This is what Google's official iOS samples do today. It is a worse fit for NYC (Apple's Look Around coverage is denser than ARCore's NYC coverage in our experience), but it is a complete and working architecture.
 
 ---
 
@@ -153,7 +193,9 @@ let isStill = stillSamples >= 30  // ~0.5 s at 60 Hz
 
 ---
 
-## 5. Architectural occlusion — Streetscape Geometry into SceneKit
+## 5. Architectural occlusion — Streetscape Geometry, renderer TBD by Spike B
+
+> **Status.** The occlusion *source* (Streetscape Geometry meshes from `GARSession`) is decided. The *renderer* that consumes those meshes — SceneKit with a depth-only `SCNMaterial` vs RealityKit with `OcclusionMaterial` — is **conditional on Spike B in M02.0**. We have strong reference impls for each component individually (SceneKit depth-only material: documented; LiDAR-mesh occlusion via this pattern: [haris008/SceneKit-Occlusion](https://github.com/haris008/SceneKit-Occlusion)); we do not have a public shipping reference for *this exact composition* (Streetscape Geometry → SCNGeometry → depth-only occluder at 50–100 m range). Spike B closes that gap with a controlled experiment.
 
 ### Why Streetscape Geometry
 
@@ -212,11 +254,66 @@ The Streetscape meshes come in **ARSession world space**, which (after our seed)
 
 ---
 
-## 6. Asset pipeline — GLTFKit2 from the webgl submodule
+## 6. Shared data pipeline — webgl submodule is the single source of truth
 
 ### Goal
 
-iOS loads the **same** `.glb` files used by the webgl viewer. No parallel USDZ tree, no manual conversion drift.
+Both the iOS app and the webgl viewer consume the **same** 3D model binaries and the **same** geospatial placement JSON. Drift between the two platforms becomes structurally impossible because there is only one canonical copy.
+
+### Current state — drift already happened
+
+Eight placement-data files exist across the two repos as of the start of Phase 02. The two `models_to_place.json` files (one in `GeoTestARScene/GeoTestARScene/`, one in `webgl-component/`) share schema and IDs but disagree on `model_variant` (iOS says `skypath_01`, webgl says `skypath_02` at the same `6thAve_W58th_Model` ID). Other variants (`models_to_place copy.json`, `skypath_locations_green.json`, `skypath_locations_original 2.json`, etc.) are likely stale.
+
+**Open reconciliation questions** (defer to the user — do not edit JSON files without explicit ask):
+1. For each `id` in the canonical `models_to_place.json`, which `model_variant` is correct — `skypath_01`, `skypath_02`, or something else?
+2. Which of the variant files (`models_to_place copy.json`, `models_to_place_copied.json`, `skypath_locations*.json`, `skypath_tour_full_corrected.json`) is real vs stale?
+3. Are `skypath_locations.json` and `models_to_place.json` consumed for different purposes (different schemas), or is one legacy?
+
+These are resolved in the `cesium-google-3dtiles` repo first, then iOS picks up the change via submodule bump.
+
+### Architecture
+
+```
+webgl-component/                         ← submodule, single source of truth
+├── models_to_place.json                 ← canonical placement
+├── skypath_models/
+│   ├── skypath_01.glb
+│   ├── skypath_02.glb
+│   ├── skypath_column.glb
+│   └── duck.glb
+└── … (web viewer code unrelated to AR)
+
+GeoTestARScene/  Build Phase  →  Models/  (in the iOS bundle)
+                                 ├── models_to_place.json   (copied)
+                                 ├── skypath_01.glb         (copied)
+                                 └── …
+
+iOS runtime:
+    let modelsDir = Bundle.main.bundleURL.appendingPathComponent("Models")
+    let placements = try JSONDecoder().decode([Placement].self,
+        from: Data(contentsOf: modelsDir.appendingPathComponent("models_to_place.json")))
+    // Each placement.model_variant → "<modelsDir>/<model_variant>.glb"
+```
+
+Both files (`.glb` and `.json`) are gitignored at the iOS project root — the iOS repo never carries its own copy of either. The build phase copies them in fresh on every build.
+
+### Build phase script
+
+```bash
+# Build phase: "Copy shared data from webgl submodule"
+set -e
+SRC="${SRCROOT}/../webgl-component"
+DST="${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Models"
+mkdir -p "$DST"
+cp "$SRC/models_to_place.json" "$DST/"
+cp -R "$SRC/skypath_models/"*.glb "$DST/"
+```
+
+Add as a Run Script phase in the `GeoTestARScene` target, **before** "Copy Bundle Resources." Fail the build if the submodule isn't initialized (the `set -e` and `cp` will fail loudly if `models_to_place.json` isn't there).
+
+### Loader: GLTFKit2
+
+[GLTFKit2 (warrenm, MIT)](https://github.com/warrenm/GLTFKit2) is the actively-maintained Objective-C / Swift glTF 2.0 loader. SwiftPM-installable. Conversion path: `GLTFAsset → SCNScene` via `+[SCNScene sceneWithGLTFAsset:]` (SceneKit path; equivalent paths exist for Metal and RealityKit if Spike B selects RealityKit).
 
 ### Loader: GLTFKit2
 
@@ -236,36 +333,54 @@ GLTFAsset.load(with: glbURL, options: [:]) { [weak self] progress, status, asset
 
 The Khronos open-source glTF Viewer iOS app uses exactly this stack (SceneKit + GLTFKit2 + DracoSwift + libktx) — there's a real production reference here.
 
-### Bundling glb files into the iOS app at build time
+### Loader changes from the prior SceneKit baseline
 
-The submodule path `webgl-component/skypath_models/*.glb` is not in the iOS target's bundle by default. Add a Run Script build phase:
+The pre-Metal baseline loaded `*.usdz` directly via SceneKit. Phase 02 swaps that for the GLTFKit2 path. Concrete changes:
 
-```bash
-# Build phase: "Copy glb models from webgl submodule"
-SRC="${SRCROOT}/../webgl-component/skypath_models"
-DST="${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Models"
-mkdir -p "$DST"
-cp -R "$SRC/"*.glb "$DST/"
-```
-
-At runtime:
-
-```swift
-let modelsDir = Bundle.main.bundleURL.appendingPathComponent("Models")
-let glbURL = modelsDir.appendingPathComponent("\(modelName).glb")
-```
-
-Updating the webgl repo's `.glb` files and bumping the submodule commit is the **only** path for changing iOS assets. Drift between platforms becomes structurally impossible.
-
-### `models_to_place.json` schema update
-
-The existing JSON references things like `"modelName": "skypath_01"`. Keep that string identical — it now resolves to `Models/skypath_01.glb`. No JSON migration needed; just remove the `.usdz` suffix assumption in the loader.
+- `Models.swift` parsing of `models_to_place.json`: the field name `model_variant` already holds a logical name like `"skypath_01"`. Remove any `.usdz` suffix assumption in the loader; resolve to `<modelsDir>/<model_variant>.glb` instead.
+- Loader call sites switch from `SCNScene(named:)` / `SCNReferenceNode` to `GLTFAsset.load(with: url, options:)` + `SCNScene.sceneWithGLTFAsset:`.
+- USDZ-specific code paths (Reality Composer authoring, USDZ archives) are removed.
 
 ---
 
 ## 7. Implementation milestones
 
-Each milestone is ~1-3 days of focused work and has an explicit exit criterion. Land them sequentially.
+Each milestone is ~1-3 days of focused work and has an explicit exit criterion. Land them sequentially. M02.0 is non-negotiable — its outcomes decide whether §3 and §5 stand or pivot to their fallbacks.
+
+### M02.0 — Feasibility spike (~2 days, throwaway code on a separate branch)
+
+The plan over §3 and §5 contains two first-principles claims that have no public shipping reference. M02.0 closes those gaps before the rest of the work runs.
+
+**Spike A — Pose stack coexistence.** Highest-risk unknown. ~half day.
+- Build a minimal view controller. Start an `ARSession` with `ARGeoTrackingConfiguration` (`worldAlignment = .gravityAndHeading`). Initialize a `GARSession` with API key + bundle id. Feed each `ARFrame` to `GARSession.update(_:error:)`. Enable `GARGeospatialModeEnabled` + `GARStreetscapeGeometryModeEnabled`.
+- **Pass criteria**: both sessions reach localized state within 60 s outdoors; both expose valid transforms each frame; no exceptions thrown; `streetscapeGeometries` becomes non-empty.
+- **Fail action**: switch the ARSession to `ARWorldTrackingConfiguration`; adopt the fallback architecture documented in §3. Re-test in the same spike branch.
+
+**Spike B — Renderer bake-off.** ~1 day.
+- Two ~200-line throwaway view controllers, both consuming the same captured `GARStreetscapeGeometry.mesh` data (capture once from Spike A and replay):
+  - **SceneKit variant**: `ARSCNView` + `SCNGeometry` with `SCNMaterial.writesToDepthBuffer = true`, `colorBufferWriteMask = []`, `readsFromDepthBuffer = true`, `renderingOrder = -1`. Place a debug magenta cube 60 m behind a building.
+  - **RealityKit variant**: `ARView` + `MeshResource` with `OcclusionMaterial()`. Same debug cube setup.
+- **Measure**:
+  - Does occlusion render correctly at 50 m, 80 m, 120 m camera-to-occluder distance?
+  - Z-fighting / acne at building edges?
+  - FPS with 20 occluder meshes simultaneously?
+  - Lines of code to wire each path (proxy for ongoing maintenance cost).
+- **Pass criteria**: at least one renderer occludes cleanly at all three distances at ≥ 30 FPS with no visible artifacts.
+- **Pick the winner**: whichever wins on correctness first, FPS second, code-complexity tiebreaker. Write the decision (with the measured numbers) into `docs/phases/Phase02_Spike_Results.md`.
+- **Fail action**: if neither works at distance, depth precision is the issue — investigate `SCNCamera.zNear/zFar` tuning or RealityKit camera bounds before retrying. If still failing, escalate: the occlusion architecture itself needs rework before continuing.
+
+**Spike C — Sliding baseline capture.** ~half day.
+- Take the unchanged SceneKit baseline from the M02.1 starting point. Run it on a documented NYC block. Place three test anchors. Walk 50 m, return. Record video + OSLog + accelerometer trace. Mark drift at fixed visual checkpoints.
+- **Output**: a `docs/phases/Phase02_Spike_Results.md` section with measured displacement in meters at each checkpoint. This is the ground-truth against which the bounded-correction loop is later measured.
+- **No pass/fail** — this is a measurement exercise.
+
+**M02.0 exit criteria**:
+- `docs/phases/Phase02_Spike_Results.md` exists with three sections answering A, B, C.
+- Pose stack decision is committed in writing (Apple-primary vs ARCore-primary).
+- Renderer decision is committed in writing (SceneKit vs RealityKit).
+- Sliding baseline metrics are recorded.
+
+All M02.0 code is throwaway. Do not ship it. M02.1 onward starts from the unmodified `main` baseline and applies decisions from M02.0.
 
 ### M02.1 — Pure baseline boot
 - **Do**: Open the project in Xcode, fix any build errors from the restart copy. Confirm the existing SceneKit code path runs on device.
@@ -274,27 +389,27 @@ Each milestone is ~1-3 days of focused work and has an explicit exit criterion. 
 
 ### M02.2 — `earthFrame` + ARGeoAnchor parity (no content yet)
 - **Do**: Add `earthFrame` SCNNode at scene-graph root. Move anchor creation/update logic to parent anchor-content under `earthFrame/anchors/<id>`. Remove any `setWorldOrigin` calls.
-- **Exit**: Three test anchors render small debug spheres at their lat/lon. Walk a block; observe sliding behavior. **Document the sliding** — video, screenshots, OSLog capture. This is the baseline against which fixes are measured.
-- **Verifies**: Reproducible sliding behavior + new node hierarchy works.
+- **Exit**: Three test anchors render small debug spheres at their lat/lon. (M02.0 Spike C already captured the sliding baseline; here we just confirm the new node hierarchy doesn't change the sliding behavior.)
+- **Verifies**: Reproducible sliding behavior is preserved + new node hierarchy works.
 
-### M02.3 — GLTFKit2 + glb loading
-- **Do**: Add GLTFKit2 via Swift Package Manager. Add the build script to copy `webgl-component/skypath_models/*.glb` into the bundle. Replace USDZ load calls with GLTFKit2 load calls. Use the smaller `skypath_column.glb` as the first end-to-end test.
-- **Exit**: At least one model from `models_to_place.json` loads and renders at its anchor location.
-- **Verifies**: Asset pipeline closes the loop with the webgl submodule.
+### M02.3 — Shared-data pipeline + GLTFKit2 + glb loading
+- **Do**: Add GLTFKit2 via Swift Package Manager. Add the build phase from §6 that copies `webgl-component/models_to_place.json` and `webgl-component/skypath_models/*.glb` into the bundle's `Models/` folder. Update `Models.swift` to read the placement JSON from `Bundle.main`'s `Models/` folder, and to resolve `model_variant` to `<modelsDir>/<variant>.glb` (no USDZ assumption). Replace USDZ load calls with `GLTFAsset.load(...)` + `SCNScene.sceneWithGLTFAsset:`. Use `skypath_column.glb` as the first end-to-end test (smallest file).
+- **Exit**: At least one model from the canonical (webgl-side) `models_to_place.json` loads and renders at its anchor location. Verify by changing the JSON in `webgl-component` on a feature branch + bumping the submodule + rebuilding — the iOS app picks up the change with no iOS-side edit.
+- **Verifies**: Shared-data pipeline closes the loop with the webgl submodule. AC-0.
 
 ### M02.4 — `GARSession` parallel, Streetscape Geometry occluders
-- **Do**: Add ARCore iOS SDK via SPM or CocoaPods. Pair `ARSession` with `GARSession`; feed each ARFrame; enable Geospatial + Streetscape Geometry modes. Convert geometries to depth-only SCNNodes under `earthFrame/occluders`. Tint them debug-magenta with `colorBufferWriteMask = .all` during bring-up so we can see them.
+- **Do**: Apply the pose-stack decision from Spike A and the renderer decision from Spike B. Add ARCore iOS SDK via SPM or CocoaPods. Pair the chosen ARSession configuration with `GARSession`; feed each ARFrame; enable Geospatial + Streetscape Geometry modes. Convert geometries to occluder nodes under `earthFrame/occluders` using the renderer Spike B picked. Tint them debug-magenta during bring-up so we can see them.
 - **Exit**: Stand in front of a building. Toggle debug tint off; place a virtual sphere on the far side of the building; the sphere is correctly hidden.
 - **Verifies**: Occlusion mechanism works in isolation.
 
 ### M02.5 — Bounded reactive correction loop
-- **Do**: Implement the IMU stillness detector. Implement the EMA correction on `earthFrame.transform` driven by `ARGeoAnchor` delegate updates, gated by `GARGeospatialTransform.orientationYawAccuracy < 5°` and stillness. Tune `α`, the per-update clamps, and the throttle.
-- **Exit**: Repeat the M02.2 sliding-walk; compare to baseline video. Measure perceived drift at fixed checkpoints. Yaw error after 5 minutes within ±3°.
+- **Do**: Implement the IMU stillness detector. Implement the EMA correction on `earthFrame.transform` driven by the pose-stack-appropriate signals (`ARGeoAnchor` delegate updates if Spike A passed; `GARGeospatialTransform` updates if it didn't). Gate on numeric yaw uncertainty < 5° and stillness. Tune `α`, the per-update clamps, and the throttle.
+- **Exit**: Repeat the M02.0 Spike C walk; compare against the Spike C baseline metrics. Measure perceived drift at fixed checkpoints. Yaw error after 5 minutes within ±3°.
 - **Verifies**: AC-1, AC-2, AC-4 from §1.
 
 ### M02.6 — Field testing + tuning
-- **Do**: Run AC-1 through AC-4 on a documented block. Tune EMA `α`, clamp values, stillness thresholds. Record telemetry: drift, yaw error, occlusion accuracy.
-- **Exit**: All four acceptance criteria pass.
+- **Do**: Run AC-0 through AC-4 on a documented block. Tune EMA `α`, clamp values, stillness thresholds. Record telemetry: drift, yaw error, occlusion accuracy.
+- **Exit**: All five acceptance criteria pass.
 
 ### M02.7 — Documentation pass
 - **Do**: Update `docs/phases/Phase02_VPS_Grounded_Occluded_Plan.md` with as-built notes. Open Phase 03 stub for: glb→USDZ build-time conversion (if we want fast cold launches), close-range LiDAR mesh fusion, Niantic Lightship pilot, multi-device device-matrix testing.
@@ -303,13 +418,19 @@ Each milestone is ~1-3 days of focused work and has an explicit exit criterion. 
 
 ## 8. Risks and explicit open questions
 
-1. **`ARGeoTrackingConfiguration` and `GARSession` compatibility**. Google's docs and samples typically pair `GARSession` with `ARWorldTrackingConfiguration`. Whether `GARSession.update(_:error:)` accepts frames from an `ARGeoTrackingConfiguration` is not explicitly documented. **Mitigation**: empirically verify in M02.4. If incompatible, fall back to `ARWorldTrackingConfiguration` and synthesize the geo pose ourselves from `GARSession.earth`'s pose.
-2. **ARCore Geospatial quotas / billing past free tier**. Quota: 1,000 sessions/min, 100,000 requests/min. Production scale would need a billed Google Cloud project. **Mitigation**: development is free; flip the billing switch when we promote past internal testing.
-3. **Streetscape Geometry mesh latency**. Meshes arrive only after Geospatial localization; the first ~10 s of a session has no occluders. **Mitigation**: gate content placement on `.localized` anyway; show "looking around" HUD until occluders appear.
-4. **Pre-localization placement**. If the user places content before `.localized`, drift is unbounded. **Mitigation**: gate user placement on `.localized` + `.high|.medium` accuracy. Apple already provides this signal.
-5. **iPhone-without-LiDAR coverage**. ARGeoTracking works on A12+ devices, so this is mostly fine. LiDAR is a nice-to-have for close-range occlusion in Phase 03, not required for Phase 02.
-6. **Build phase + submodule on CI**. The "copy glb" build phase reads from a submodule. CI must `git submodule update --init` before building. **Mitigation**: documented in `README.md`. Add to CI script.
-7. **What if Apple's NYC ARGeoTracking accuracy degrades in winter / fog / crowds?** Empirical question. **Mitigation**: the bounded-correction architecture means even degraded pose updates correct slowly without jumping — graceful degradation is built in. If accuracy drops to `.low`, freeze corrections and show a HUD warning.
+Top of list = highest-risk unknowns we resolve in M02.0 before committing the rest of the plan.
+
+1. **🔴 `ARGeoTrackingConfiguration` + `GARSession` coexistence is undocumented**. Google's iOS samples pair `GARSession` only with `ARWorldTrackingConfiguration`. The combination is plausible (GARSession just consumes ARFrame, which is configuration-agnostic) but not confirmed. **Resolution**: Spike A in M02.0. **Fallback**: documented in §3 ("Fallback if Spike A fails").
+2. **🔴 SceneKit + Streetscape Geometry as depth-only occluder at distance has no shipping reference**. Each component is documented in isolation; the composition is first-principles. **Resolution**: Spike B in M02.0. **Fallback**: RealityKit `OcclusionMaterial`. If both fail, depth-buffer precision is the issue and the occlusion architecture needs rework.
+3. **🔴 Drift between iOS-side and webgl-side `models_to_place.json`** (different `model_variant` at the same `id`). Cleaned up by adopting webgl as canonical (§6), but the user must still reconcile the variant choices in the webgl repo first. **Resolution**: user-driven, separate from M02.0.
+4. **🟡 ARCore Geospatial quotas / billing past free tier**. Limits: 1,000 sessions/min, 100,000 requests/min. Production scale would need a billed Google Cloud project. **Mitigation**: development is free; flip the billing switch before public launch.
+5. **🟡 Streetscape Geometry mesh latency**. Meshes arrive only after Geospatial localization (~10 s warm-up). **Mitigation**: gate content placement on `.localized`; show "looking around" HUD until occluders appear.
+6. **🟡 Pre-localization placement**. If the user places content before `.localized`, drift is unbounded. **Mitigation**: gate user placement on `.localized` + `.high|.medium` accuracy. Apple already provides this signal.
+7. **🟢 iPhone-without-LiDAR coverage**. ARGeoTracking works on A12+ devices. LiDAR is optional, used only for close-range fusion in Phase 03.
+8. **🟢 Build phase + submodule on CI**. CI must `git submodule update --init` before building. **Mitigation**: documented in `README.md`. Add to CI script.
+9. **🟢 ARGeoTracking accuracy degradation in winter / fog / crowds**. **Mitigation**: bounded-correction architecture means degraded pose updates correct slowly without jumping. If accuracy drops to `.low`, freeze corrections and show a HUD warning.
+
+Legend: 🔴 must resolve in M02.0 or before any subsequent milestone. 🟡 known issue, handled by named mitigation. 🟢 manageable, documented for awareness.
 
 ---
 

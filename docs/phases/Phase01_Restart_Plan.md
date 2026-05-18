@@ -10,7 +10,7 @@ That track never reached working occlusion. The bridge code grew to ~3,000 lines
 
 - **Renderer / AR stack**: Apple SceneKit + ARKit, as inherited from the pre-Metal baseline (`GeoTestARScene/`).
 - **Pose**: `ARGeoTrackingConfiguration` + `ARGeoAnchor` (Apple GeoTracking), as inherited.
-- **Asset source of truth**: the glTF/`.glb` models in `webgl-component/skypath_models/`. The webgl deployment already renders these correctly via Cesium; both sides should converge on the same files so the iOS app and the web app never drift apart. See [`GeoTestARScene/GeoTestARScene/ASSETS.md`](../../GeoTestARScene/GeoTestARScene/ASSETS.md).
+- **Shared data source of truth**: the webgl submodule (`webgl-component/`) holds the canonical glTF model binaries **and** the canonical geospatial placement JSON. Both iOS and the web viewer read from the same files. See [`GeoTestARScene/GeoTestARScene/SHARED_DATA.md`](../../GeoTestARScene/GeoTestARScene/SHARED_DATA.md).
 
 ## What this repo IS NOT (explicit non-goals)
 
@@ -34,7 +34,7 @@ See [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan
 
 A clean device build of the restored SceneKit baseline running the existing `skypath_locations*.json` placement, plus a recorded field session that reproduces the sliding behavior in a documented way. From that ground-truth capture we'll write Phase 02 — and only then commit to a specific fix.
 
-The baseline will not run fully out of the box: the four largest USDZ models were stripped from the repo (see `ASSETS.md`). At minimum we need to either restore one of them as a Git LFS asset for development, or land the asset pipeline work first.
+The baseline will not run fully out of the box: the four largest USDZ models were stripped from the repo (see [`SHARED_DATA.md`](../../GeoTestARScene/GeoTestARScene/SHARED_DATA.md)). The Phase 02 build-phase pipeline (M02.3) closes that gap by pulling models from the webgl submodule.
 
 ## Background notes
 
