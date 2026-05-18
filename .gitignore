@@ -1,0 +1,57 @@
+# macOS
+.DS_Store
+._*
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+.build/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Secrets (keys live in *.local.xcconfig and are never committed)
+*.local.xcconfig
+**/Secrets.plist
+
+# Node (in case anything lands locally outside the webgl submodule)
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+
+# SourcePrep (local index, not for the repo)
+.sourceprep/
+
+# 3D model binaries — source of truth is webgl-component/skypath_models/*.glb.
+# See GeoTestARScene/GeoTestARScene/ASSETS.md for the asset strategy.
+# The small smoke-test asset is the only USDZ we keep in the repo.
+*.usdz
+!GeoTestARScene/GeoTestARScene/skypath_001.usdz
+*.glb

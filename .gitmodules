@@ -1,0 +1,3 @@
+[submodule "webgl-component"]
+	path = webgl-component
+	url = https://github.com/EricBintner/cesium-google-3dtiles
