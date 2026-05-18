@@ -86,11 +86,25 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
+
         // Run a basic session to show the camera feed. Geo-tracking will be started by the user.
         let configuration = ARWorldTrackingConfiguration()
         configuration.worldAlignment = .gravityAndHeading
         sceneView.session.run(configuration)
+    }
+
+    // SPIKE-BRANCH: present the M02.0 spike menu instead of running the
+    // normal AR flow. This addition exists ONLY on the phase-02-spike
+    // branch and is grep-safe (search for "SPIKE-BRANCH:") for removal
+    // before merging anything back to main. See docs/phases/Phase02_Spike_Playbook.md.
+    private var spikeMenuPresented = false
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !spikeMenuPresented else { return }
+        spikeMenuPresented = true
+        let menu = SpikeMenuViewController()
+        menu.modalPresentationStyle = .fullScreen
+        present(menu, animated: false, completion: nil)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
