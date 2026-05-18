@@ -50,15 +50,20 @@ git push
 
 Both web viewer (next Vercel deploy) and iOS app (next Xcode build) now pick up the new data. There is never a separate "iOS update" step.
 
-## Current open reconciliation questions
+## Canonical files — resolved
 
-These predate this restart and require user decisions, ideally before Phase 02's M02.3 lands:
+The user confirmed the canonical files are the ones currently in the `cesium-google-3dtiles` repo. iOS-side copies have been deleted; `.gitignore` now blocks them from re-appearing.
 
-1. **`models_to_place.json` drift.** iOS-side and webgl-side disagree on `model_variant` for the same `id` (e.g. iOS says `skypath_01`, webgl says `skypath_02` for `6thAve_W58th_Model`). Which is correct?
-2. **Stale variants on the webgl side.** `models_to_place copy.json`, `models_to_place_copied.json`, `skypath_tour_full_corrected.json` — are any of these real, or are they all stale duplicates?
-3. **Stale variants on the iOS side** (currently bundled, will be removed by the pipeline): `skypath_locations.json`, `skypath_locations_green.json`, `skypath_locations_original 2.json`. Different schema from `models_to_place.json` — was either schema legacy?
+| Canonical (webgl repo) | iOS side |
+|---|---|
+| `webgl-component/models_to_place.json` (39 entries, `model_variant: skypath_02` for `6thAve_W58th_Model`) | Removed; supplied by build phase in M02.3 |
+| `webgl-component/skypath_models/*.glb` | Already gitignored; supplied by build phase |
+| `webgl-component/models_to_place copy.json` | (Webgl-side cleanup — not in scope for this repo) |
+| `webgl-component/models_to_place_copied.json` | (Webgl-side cleanup — not in scope for this repo) |
+| `webgl-component/skypath_tour_full_corrected.json` | (Webgl-side cleanup — not in scope for this repo) |
+| (legacy) `skypath_locations.json`, `skypath_locations_green.json`, `skypath_locations_original 2.json` | Deleted from iOS — not referenced by Swift code |
 
-Each resolution is one commit in the webgl repo + a submodule bump in this one.
+The "copy"/"copied" variants in the webgl repo are flagged here as candidate cleanup but are out of scope for this iOS repo. They do not affect iOS — only `models_to_place.json` is read by the iOS build phase and the webgl viewer.
 
 ## What stays in the iOS bundle directly
 

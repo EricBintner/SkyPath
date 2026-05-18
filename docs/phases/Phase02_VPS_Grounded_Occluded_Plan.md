@@ -260,16 +260,16 @@ The Streetscape meshes come in **ARSession world space**, which (after our seed)
 
 Both the iOS app and the webgl viewer consume the **same** 3D model binaries and the **same** geospatial placement JSON. Drift between the two platforms becomes structurally impossible because there is only one canonical copy.
 
-### Current state — drift already happened
+### Resolution status — canonical files declared, iOS-side copies deleted
 
-Eight placement-data files exist across the two repos as of the start of Phase 02. The two `models_to_place.json` files (one in `GeoTestARScene/GeoTestARScene/`, one in `webgl-component/`) share schema and IDs but disagree on `model_variant` (iOS says `skypath_01`, webgl says `skypath_02` at the same `6thAve_W58th_Model` ID). Other variants (`models_to_place copy.json`, `skypath_locations_green.json`, `skypath_locations_original 2.json`, etc.) are likely stale.
+The user confirmed the canonical files are the ones in `cesium-google-3dtiles`. As of the amendment landing this section:
 
-**Open reconciliation questions** (defer to the user — do not edit JSON files without explicit ask):
-1. For each `id` in the canonical `models_to_place.json`, which `model_variant` is correct — `skypath_01`, `skypath_02`, or something else?
-2. Which of the variant files (`models_to_place copy.json`, `models_to_place_copied.json`, `skypath_locations*.json`, `skypath_tour_full_corrected.json`) is real vs stale?
-3. Are `skypath_locations.json` and `models_to_place.json` consumed for different purposes (different schemas), or is one legacy?
+- **Canonical**: `webgl-component/models_to_place.json` (39 entries, `model_variant: skypath_02` for `6thAve_W58th_Model`).
+- **Deleted from iOS**: `models_to_place.json` (stale duplicate), `skypath_locations.json`, `skypath_locations_green.json`, `skypath_locations_original 2.json` (the last three were not referenced by iOS Swift code at all — pure legacy).
+- **`.gitignore`** now blocks any of these from re-appearing on the iOS side.
+- **Webgl-side variant cleanup** (`models_to_place copy.json`, `models_to_place_copied.json`, `skypath_tour_full_corrected.json`) is the webgl repo's housekeeping and out of scope for this plan. Only `models_to_place.json` is consumed by the iOS pipeline and (presumably) the webgl viewer.
 
-These are resolved in the `cesium-google-3dtiles` repo first, then iOS picks up the change via submodule bump.
+Until M02.3 lands the build phase, the iOS app will fail to find `models_to_place.json` at runtime (`Bundle.main.url(forResource: "models_to_place", withExtension: "json")` returns nil). That is intentional and load-bearing: it forces M02.3 to actually exist before content can render.
 
 ### Architecture
 
@@ -422,7 +422,7 @@ Top of list = highest-risk unknowns we resolve in M02.0 before committing the re
 
 1. **🔴 `ARGeoTrackingConfiguration` + `GARSession` coexistence is undocumented**. Google's iOS samples pair `GARSession` only with `ARWorldTrackingConfiguration`. The combination is plausible (GARSession just consumes ARFrame, which is configuration-agnostic) but not confirmed. **Resolution**: Spike A in M02.0. **Fallback**: documented in §3 ("Fallback if Spike A fails").
 2. **🔴 SceneKit + Streetscape Geometry as depth-only occluder at distance has no shipping reference**. Each component is documented in isolation; the composition is first-principles. **Resolution**: Spike B in M02.0. **Fallback**: RealityKit `OcclusionMaterial`. If both fail, depth-buffer precision is the issue and the occlusion architecture needs rework.
-3. **🔴 Drift between iOS-side and webgl-side `models_to_place.json`** (different `model_variant` at the same `id`). Cleaned up by adopting webgl as canonical (§6), but the user must still reconcile the variant choices in the webgl repo first. **Resolution**: user-driven, separate from M02.0.
+3. **🟢 ~~Drift between iOS-side and webgl-side `models_to_place.json`~~ RESOLVED**. User confirmed webgl is canonical. iOS-side copies deleted; `.gitignore` blocks re-introduction. Once the M02.3 build phase lands, both platforms read the same file. See §6.
 4. **🟡 ARCore Geospatial quotas / billing past free tier**. Limits: 1,000 sessions/min, 100,000 requests/min. Production scale would need a billed Google Cloud project. **Mitigation**: development is free; flip the billing switch before public launch.
 5. **🟡 Streetscape Geometry mesh latency**. Meshes arrive only after Geospatial localization (~10 s warm-up). **Mitigation**: gate content placement on `.localized`; show "looking around" HUD until occluders appear.
 6. **🟡 Pre-localization placement**. If the user places content before `.localized`, drift is unbounded. **Mitigation**: gate user placement on `.localized` + `.high|.medium` accuracy. Apple already provides this signal.

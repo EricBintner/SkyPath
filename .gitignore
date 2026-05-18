@@ -99,6 +99,10 @@ yarn-error.log
 *.usdz
 !GeoTestARScene/GeoTestARScene/skypath_001.usdz
 *.glb
-# Note: models_to_place.json IS currently tracked on the iOS side as a
-# legacy bundled copy; that bundling moves to the build phase in M02.3,
-# at which point we'll add models_to_place.json to this gitignore too.
+# Placement JSON: canonical copy lives in webgl-component/. iOS source
+# tree must NEVER carry its own copy — the M02.3 build phase copies the
+# canonical file into the bundle at build time. This rule blocks
+# accidental re-introduction of an iOS-side copy.
+GeoTestARScene/GeoTestARScene/models_to_place.json
+GeoTestARScene/GeoTestARScene/skypath_locations*.json
+GeoTestARScene/GeoTestARScene/skypath_tour*.json
