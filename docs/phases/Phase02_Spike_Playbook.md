@@ -1,13 +1,13 @@
 # Phase 02 — Spike Playbook
 
-This document is the operator's checklist for running the M02.0 feasibility spike defined in [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan.md) §7. All spike work lives on the **`phase-02-spike` branch**; nothing here is meant to merge into `main`. Record findings in [`Phase02_Spike_Results.md`](Phase02_Spike_Results.md) as you go.
+This document is the operator's checklist for running the M02.0 feasibility spike defined in [`Phase02_VPS_Grounded_Occluded_Plan.md`](Phase02_VPS_Grounded_Occluded_Plan.md) §7. The spike code lives on `main` under `GeoTestARScene/GeoTestARScene/Spike/` and is gated at runtime by a `SHOW_SPIKE_MENU=1` environment variable so day-to-day builds run normally. Record findings in [`Phase02_Spike_Results.md`](Phase02_Spike_Results.md) as you go. After the spikes complete, the `Spike/` folder and the `// SPIKE:` hook in `ARViewController.swift` get deleted in one commit.
 
 ## 0. One-time setup (do this first)
 
-### 0.1 Branch
+### 0.1 Pull latest
+
 ```bash
-git fetch origin
-git checkout phase-02-spike
+git pull origin main
 git submodule update --init --recursive
 ```
 
@@ -60,9 +60,19 @@ Files you should now see in the Xcode project:
 - `Spike/SpikeBViewController.swift`
 - `Spike/SpikeCViewController.swift`
 
-### 0.6 Hook up the menu
+### 0.6 Enable the spike menu in the Xcode scheme
 
-On the `phase-02-spike` branch, `ARViewController.swift` already has a one-line override that presents `SpikeMenuViewController` instead of the normal AR flow. Confirm by searching for `// SPIKE-BRANCH:` in the file — that's the marker. Nothing else in `ARViewController.swift` is modified, so reverting the branch later is clean.
+The spike menu is gated by an environment variable so normal builds are unaffected. To turn it on for spike testing:
+
+1. Xcode → **Product → Scheme → Edit Scheme…**
+2. Pick the **Run** action in the left sidebar.
+3. Select the **Arguments** tab.
+4. Under **Environment Variables**, add:
+   - Name: `SHOW_SPIKE_MENU`
+   - Value: `1`
+5. Close the scheme editor. Subsequent ⌘R launches will pop the spike menu on the AR tab. To return to normal behavior, uncheck the variable in the scheme.
+
+Search for `// SPIKE:` in `ARViewController.swift` to see the hook code. All spike-related code (`Spike/` folder + the `// SPIKE:` block) is removed in a single commit after the spikes complete.
 
 ### 0.7 Build & deploy to device
 
@@ -146,8 +156,8 @@ Open [`Phase02_Spike_Results.md`](Phase02_Spike_Results.md). Fill in each of the
 
 Once all three sections are filled in:
 
-- Commit the results doc to the `phase-02-spike` branch.
-- Open a draft PR from `phase-02-spike` → `main` titled "Phase 02 spike results — DO NOT MERGE CODE." The PR body links the results doc. We do not merge the spike code; we cherry-pick decisions back into the M02.1+ milestones on a fresh branch.
+- Commit the results doc directly to `main` (this is a solo-dev workflow; no PR required).
+- The spike code stays on `main` until M02.1 begins. At that point: delete the `Spike/` folder, remove the `// SPIKE:` hook in `ARViewController.swift`, and drop the `SHOW_SPIKE_MENU` env var from the scheme — one cleanup commit.
 
 ## 5. After the spike
 
@@ -157,5 +167,6 @@ Per Phase 02 §7 M02.0 exit criteria, the spike is done when:
 - [ ] Renderer decision is committed in writing.
 - [ ] Sliding baseline metrics are recorded.
 - [ ] Phase 02 §3 and §5 are updated on `main` to reflect the chosen path (drop the "gated on Spike X" language; promote the chosen option from "candidate" to "decided").
+- [ ] `Spike/` folder + `// SPIKE:` hook in `ARViewController.swift` deleted; `SHOW_SPIKE_MENU` env var removed from the Xcode scheme.
 
-Then proceed to M02.1 on a new branch off of `main`.
+Then proceed to M02.1 directly on `main`.

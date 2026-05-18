@@ -1,6 +1,6 @@
 //
 //  SpikeAViewController.swift
-//  Phase 02 — Spike branch only. Do not merge to main.
+//  Phase 02 — M02.0 spike code. Deleted after spikes complete.
 //
 //  Spike A: confirm ARGeoTrackingConfiguration + GARSession (Geospatial +
 //  Streetscape Geometry) can run together on iOS. This is the riskiest

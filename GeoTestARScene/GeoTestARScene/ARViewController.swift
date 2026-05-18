@@ -93,13 +93,15 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         sceneView.session.run(configuration)
     }
 
-    // SPIKE-BRANCH: present the M02.0 spike menu instead of running the
-    // normal AR flow. This addition exists ONLY on the phase-02-spike
-    // branch and is grep-safe (search for "SPIKE-BRANCH:") for removal
-    // before merging anything back to main. See docs/phases/Phase02_Spike_Playbook.md.
+    // SPIKE: present the M02.0 spike menu instead of the normal AR flow when
+    // SHOW_SPIKE_MENU=1 is set in the Xcode scheme's Run > Arguments >
+    // Environment Variables. Default-off so day-to-day builds run normally.
+    // grep "// SPIKE:" to find all spike-related code for cleanup later.
+    // See docs/phases/Phase02_Spike_Playbook.md.
     private var spikeMenuPresented = false
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        guard ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] == "1" else { return }
         guard !spikeMenuPresented else { return }
         spikeMenuPresented = true
         let menu = SpikeMenuViewController()

@@ -1,10 +1,11 @@
 //
 //  SpikeMenuViewController.swift
-//  Phase 02 — Spike branch only. Do not merge to main.
+//  Phase 02 — M02.0 spike code. Deleted after spikes complete (see
+//  Phase02_Spike_Playbook.md § "After the spike"). Gated at runtime by
+//  the SHOW_SPIKE_MENU=1 environment variable in ARViewController
+//  (search "// SPIKE:").
 //
-//  Minimal picker that launches each of the three M02.0 spike view
-//  controllers. Hooked up via a one-line addition to ARViewController on
-//  this branch (see SPIKE-BRANCH: marker there).
+//  Minimal picker that launches each of the three spike view controllers.
 //
 
 import UIKit

@@ -1,6 +1,6 @@
 //
 //  SpikeCViewController.swift
-//  Phase 02 — Spike branch only. Do not merge to main.
+//  Phase 02 — M02.0 spike code. Deleted after spikes complete.
 //
 //  Spike C: capture quantitative baseline metrics for the "sliding" bug on
 //  the unmodified SceneKit + ARGeoAnchor path. The numbers from this spike

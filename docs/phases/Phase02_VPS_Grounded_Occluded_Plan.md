@@ -347,7 +347,9 @@ The pre-Metal baseline loaded `*.usdz` directly via SceneKit. Phase 02 swaps tha
 
 Each milestone is ~1-3 days of focused work and has an explicit exit criterion. Land them sequentially. M02.0 is non-negotiable — its outcomes decide whether §3 and §5 stand or pivot to their fallbacks.
 
-### M02.0 — Feasibility spike (~2 days, throwaway code on a separate branch)
+### M02.0 — Feasibility spike (~2 days)
+
+Spike code lives on `main` under `GeoTestARScene/GeoTestARScene/Spike/` and is gated at runtime by `SHOW_SPIKE_MENU=1` in the Xcode scheme so normal builds run the regular AR flow. After the spikes complete and decisions are recorded, the `Spike/` folder and the `// SPIKE:` hook in `ARViewController.swift` are deleted in one cleanup commit. See [`Phase02_Spike_Playbook.md`](Phase02_Spike_Playbook.md) for the operator's checklist.
 
 The plan over §3 and §5 contains two first-principles claims that have no public shipping reference. M02.0 closes those gaps before the rest of the work runs.
 
@@ -380,7 +382,7 @@ The plan over §3 and §5 contains two first-principles claims that have no publ
 - Renderer decision is committed in writing (SceneKit vs RealityKit).
 - Sliding baseline metrics are recorded.
 
-All M02.0 code is throwaway. Do not ship it. M02.1 onward starts from the unmodified `main` baseline and applies decisions from M02.0.
+All M02.0 code is throwaway and removed in a cleanup commit before M02.1 begins. M02.1 onward starts from `main` with the spike code deleted and the decisions from M02.0 baked into the plan above.
 
 ### M02.1 — Pure baseline boot
 - **Do**: Open the project in Xcode, fix any build errors from the restart copy. Confirm the existing SceneKit code path runs on device.

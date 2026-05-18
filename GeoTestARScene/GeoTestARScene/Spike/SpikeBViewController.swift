@@ -1,6 +1,6 @@
 //
 //  SpikeBViewController.swift
-//  Phase 02 — Spike branch only. Do not merge to main.
+//  Phase 02 — M02.0 spike code. Deleted after spikes complete.
 //
 //  Spike B: SceneKit (depth-only SCNMaterial) vs RealityKit
 //  (OcclusionMaterial) as the renderer for Streetscape Geometry occluders.
