@@ -152,7 +152,7 @@ class LocationsViewController: UIViewController, WKNavigationDelegate {
             }
         """;
         
-        webView.evaluateJavaScript(pauseScript) { [weak self] result, error in
+        webView.evaluateJavaScript(pauseScript) { result, error in
             if let error = error {
                 print("Error pausing web content: \(error.localizedDescription)")
             } else if let status = result as? [String: Any] {
