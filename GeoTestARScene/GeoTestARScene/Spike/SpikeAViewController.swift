@@ -178,8 +178,9 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
                 hudLabel.text = "ARGeoTrackingConfiguration unsupported on this device.\nFlip the Fallback switch to test ARWorldTracking + GARSession."
                 return
             }
+            // ARGeoTrackingConfiguration.worldAlignment is unavailable in iOS 18+
+            // (the framework forces .gravityAndHeading). Just construct the config.
             let geo = ARGeoTrackingConfiguration()
-            geo.worldAlignment = .gravityAndHeading
             config = geo
             NSLog("[SpikeA] Starting ARGeoTrackingConfiguration (primary)")
         }
@@ -223,7 +224,9 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
         updateHUD()
     }
 
-    func session(_ session: ARSession, didUpdate geoTrackingStatus: ARGeoTrackingStatus) {
+    func session(_ session: ARSession, didChange geoTrackingStatus: ARGeoTrackingStatus) {
+        // ARKit selector is session:didChangeGeoTrackingStatus: (iOS 14+).
+        // Using `didUpdate` here silently no-ops because the selector never matches.
         if geoTrackingStatus.state == .localized, arGeoFirstLocalizedAt == nil {
             arGeoFirstLocalizedAt = Date()
             let elapsed = arGeoFirstLocalizedAt!.timeIntervalSince(spikeStartTime ?? Date())
@@ -250,11 +253,14 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
 
         // Apple GeoTracking
         if !useFallbackConfig, let frame = sceneView.session.currentFrame {
-            let s = frame.geoTrackingStatus
-            lines.append("AR.GeoTracking.state: \(s.state)")
-            lines.append("AR.GeoTracking.accuracy: \(s.accuracy)")
-            if let t = arGeoFirstLocalizedAt {
-                lines.append(String(format: "  localized at: +%.1fs", t.timeIntervalSince(start)))
+            if let s = frame.geoTrackingStatus {
+                lines.append("AR.GeoTracking.state: \(s.state)")
+                lines.append("AR.GeoTracking.accuracy: \(s.accuracy)")
+                if let t = arGeoFirstLocalizedAt {
+                    lines.append(String(format: "  localized at: +%.1fs", t.timeIntervalSince(start)))
+                }
+            } else {
+                lines.append("AR.GeoTracking: awaiting status")
             }
         } else if useFallbackConfig {
             lines.append("AR.GeoTracking: disabled (fallback)")
@@ -265,19 +271,25 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
 
         // Google Geospatial
         if let gar = garSession {
-            let earth = gar.earth
-            lines.append("GAR.Earth.state: \(earth.earthState)")
-            if earth.earthState == .enabled, garEarthFirstEnabledAt == nil {
-                garEarthFirstEnabledAt = Date()
-            }
-            if let t = garEarthFirstEnabledAt {
-                lines.append(String(format: "  enabled at: +%.1fs", t.timeIntervalSince(start)))
-            }
-            if let xform = earth.cameraGeospatialTransform {
-                lines.append(String(format: "  yaw accuracy: %.1f°", xform.orientationYawAccuracy))
-                lines.append(String(format: "  horizontal accuracy: %.1f m", xform.horizontalAccuracy))
+            // gar.earth can be nil in some SDK versions before the session
+            // is ready; treat as transient and print a placeholder rather
+            // than crashing on a force-unwrap (Playbook §4.5).
+            if let earth = gar.earth {
+                lines.append("GAR.Earth.state: \(earth.earthState)")
+                if earth.earthState == GAREarthState.enabled, garEarthFirstEnabledAt == nil {
+                    garEarthFirstEnabledAt = Date()
+                }
+                if let t = garEarthFirstEnabledAt {
+                    lines.append(String(format: "  enabled at: +%.1fs", t.timeIntervalSince(start)))
+                }
+                if let xform = earth.cameraGeospatialTransform {
+                    lines.append(String(format: "  yaw accuracy: %.1f°", xform.orientationYawAccuracy))
+                    lines.append(String(format: "  horizontal accuracy: %.1f m", xform.horizontalAccuracy))
+                } else {
+                    lines.append("  camera transform: nil")
+                }
             } else {
-                lines.append("  camera transform: nil")
+                lines.append("GAR.Earth: not ready yet")
             }
             lines.append("Streetscape geometries: \(lastStreetscapeCount)")
             if let t = firstStreetscapeAt {

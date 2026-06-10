@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1532BCA22FD9E0F40070903A /* ARCoreAugmentedFaces in Frameworks */ = {isa = PBXBuildFile; productRef = 1532BCA12FD9E0F40070903A /* ARCoreAugmentedFaces */; };
+		1532BCA42FD9E0F40070903A /* ARCoreCloudAnchors in Frameworks */ = {isa = PBXBuildFile; productRef = 1532BCA32FD9E0F40070903A /* ARCoreCloudAnchors */; };
+		1532BCA62FD9E0F40070903A /* ARCoreGARSession in Frameworks */ = {isa = PBXBuildFile; productRef = 1532BCA52FD9E0F40070903A /* ARCoreGARSession */; };
+		1532BCA82FD9E0F40070903A /* ARCoreGeospatial in Frameworks */ = {isa = PBXBuildFile; productRef = 1532BCA72FD9E0F40070903A /* ARCoreGeospatial */; };
+		1532BCAA2FD9E0F40070903A /* ARCoreSemantics in Frameworks */ = {isa = PBXBuildFile; productRef = 1532BCA92FD9E0F40070903A /* ARCoreSemantics */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		15C5BE662DB9562400D36E75 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,33 +37,9 @@
 		15C5BE6F2DB9562400D36E75 /* GeoTestARSceneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeoTestARSceneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		150F2BF92DCE69F700B6E8C0 /* Exceptions for "GeoTestARScene" folder in "GeoTestARScene" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				skypath_locations_green.json,
-			);
-			target = 15C5BE522DB9562300D36E75 /* GeoTestARScene */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		150F2BFA2DCE69F700B6E8C0 /* Exceptions for "GeoTestARScene" folder in "Compile Sources" phase from "GeoTestARScene" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 15C5BE4F2DB9562300D36E75 /* Sources */;
-			membershipExceptions = (
-				skypath_locations_green.json,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		15C5BE552DB9562300D36E75 /* GeoTestARScene */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				150F2BF92DCE69F700B6E8C0 /* Exceptions for "GeoTestARScene" folder in "GeoTestARScene" target */,
-				150F2BFA2DCE69F700B6E8C0 /* Exceptions for "GeoTestARScene" folder in "Compile Sources" phase from "GeoTestARScene" target */,
-			);
 			path = GeoTestARScene;
 			sourceTree = "<group>";
 		};
@@ -76,6 +60,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1532BCA62FD9E0F40070903A /* ARCoreGARSession in Frameworks */,
+				1532BCA82FD9E0F40070903A /* ARCoreGeospatial in Frameworks */,
+				1532BCA22FD9E0F40070903A /* ARCoreAugmentedFaces in Frameworks */,
+				1532BCA42FD9E0F40070903A /* ARCoreCloudAnchors in Frameworks */,
+				1532BCAA2FD9E0F40070903A /* ARCoreSemantics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,6 +125,11 @@
 			);
 			name = GeoTestARScene;
 			packageProductDependencies = (
+				1532BCA12FD9E0F40070903A /* ARCoreAugmentedFaces */,
+				1532BCA32FD9E0F40070903A /* ARCoreCloudAnchors */,
+				1532BCA52FD9E0F40070903A /* ARCoreGARSession */,
+				1532BCA72FD9E0F40070903A /* ARCoreGeospatial */,
+				1532BCA92FD9E0F40070903A /* ARCoreSemantics */,
 			);
 			productName = GeoTestARScene;
 			productReference = 15C5BE532DB9562300D36E75 /* GeoTestARScene.app */;
@@ -219,6 +213,9 @@
 			);
 			mainGroup = 15C5BE4A2DB9562300D36E75;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 15C5BE542DB9562300D36E75 /* Products */;
 			projectDirPath = "";
@@ -345,7 +342,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -402,7 +399,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -484,7 +481,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FU96NT58N5;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.GeoTestARSceneTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -503,7 +500,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FU96NT58N5;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.GeoTestARSceneTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -588,6 +585,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google-ar/arcore-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.54.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1532BCA12FD9E0F40070903A /* ARCoreAugmentedFaces */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */;
+			productName = ARCoreAugmentedFaces;
+		};
+		1532BCA32FD9E0F40070903A /* ARCoreCloudAnchors */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */;
+			productName = ARCoreCloudAnchors;
+		};
+		1532BCA52FD9E0F40070903A /* ARCoreGARSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */;
+			productName = ARCoreGARSession;
+		};
+		1532BCA72FD9E0F40070903A /* ARCoreGeospatial */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */;
+			productName = ARCoreGeospatial;
+		};
+		1532BCA92FD9E0F40070903A /* ARCoreSemantics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 154F88192FBDE33C00C46EE4 /* XCRemoteSwiftPackageReference "arcore-ios-sdk" */;
+			productName = ARCoreSemantics;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 15C5BE4B2DB9562300D36E75 /* Project object */;
 }

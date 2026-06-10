@@ -786,7 +786,10 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         updateStatus("AR Session interrupted.")
     }
 
-    func session(_ session: ARSession, didUpdate geoTrackingStatus: ARGeoTrackingStatus) {
+    // ARKit selector is session:didChangeGeoTrackingStatus: (iOS 14+).
+    // Was previously named `didUpdate` here, which silently no-ops because
+    // the selector never matches — localization status never reached this code.
+    func session(_ session: ARSession, didChange geoTrackingStatus: ARGeoTrackingStatus) {
         var statusMessage = ""
         
         // Use a switch to handle all possible states and provide detailed feedback.

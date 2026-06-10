@@ -92,8 +92,9 @@ final class SpikeCViewController: UIViewController, ARSCNViewDelegate, ARSession
             hudLabel.text = "ARGeoTrackingConfiguration unsupported on this device."
             return
         }
+        // ARGeoTrackingConfiguration.worldAlignment is unavailable in iOS 18+
+        // (forced to .gravityAndHeading). Just construct and run.
         let config = ARGeoTrackingConfiguration()
-        config.worldAlignment = .gravityAndHeading
         sceneView.session.run(config, options: [.removeExistingAnchors, .resetTracking])
         os_log("spike.c started", log: log, type: .info)
     }
@@ -162,11 +163,14 @@ final class SpikeCViewController: UIViewController, ARSCNViewDelegate, ARSession
     }
 
     private func updateHUD(frame: ARFrame) {
-        let s = frame.geoTrackingStatus
         var lines: [String] = []
         lines.append("Spike C — Sliding baseline")
-        lines.append("AR.GeoTracking.state: \(s.state)")
-        lines.append("AR.GeoTracking.accuracy: \(s.accuracy)")
+        if let s = frame.geoTrackingStatus {
+            lines.append("AR.GeoTracking.state: \(s.state)")
+            lines.append("AR.GeoTracking.accuracy: \(s.accuracy)")
+        } else {
+            lines.append("AR.GeoTracking: awaiting status")
+        }
         lines.append("Anchors placed: \(anchors.count)")
         lines.append("")
         lines.append("Tap 'Place anchor here' over a visual landmark.")

@@ -56,6 +56,10 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
     }
 
     private func setupViewsForCurrentMode() {
+        // Pause the outgoing session so it doesn't keep running in the
+        // background and skew the bake-off's FPS/thermal numbers.
+        sceneView.session.pause()
+        realityView.session.pause()
         sceneView.removeFromSuperview()
         realityView.removeFromSuperview()
         let container: UIView
@@ -151,9 +155,9 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
         //   - If Spike A failed and fallback passed: ARWorldTrackingConfiguration
         let config: ARConfiguration = {
             if ARGeoTrackingConfiguration.isSupported {
-                let c = ARGeoTrackingConfiguration()
-                c.worldAlignment = .gravityAndHeading
-                return c
+                // ARGeoTrackingConfiguration.worldAlignment is unavailable in
+                // iOS 18+ (forced to .gravityAndHeading by the framework).
+                return ARGeoTrackingConfiguration()
             } else {
                 let c = ARWorldTrackingConfiguration()
                 c.worldAlignment = .gravityAndHeading

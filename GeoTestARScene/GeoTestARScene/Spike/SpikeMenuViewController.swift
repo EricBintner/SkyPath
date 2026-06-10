@@ -23,7 +23,7 @@ final class SpikeMenuViewController: UIViewController {
         title.translatesAutoresizingMaskIntoConstraints = false
 
         let subtitle = UILabel()
-        subtitle.text = "Throwaway code. Branch: phase-02-spike."
+        subtitle.text = "Throwaway code. Gated by SHOW_SPIKE_MENU=1; deleted after M02.0."
         subtitle.font = .systemFont(ofSize: 13)
         subtitle.textColor = .lightGray
         subtitle.translatesAutoresizingMaskIntoConstraints = false

@@ -220,7 +220,7 @@ class LocationsViewController: UIViewController, WKNavigationDelegate {
             }
         """;
         
-        webView.evaluateJavaScript(resumeScript) { [weak self] result, error in
+        webView.evaluateJavaScript(resumeScript) { result, error in
             if let error = error {
                 print("Error resuming web content: \(error.localizedDescription)")
             } else if let status = result as? [String: Any] {
