@@ -32,6 +32,9 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
     // MARK: - Sessions
 
     private var garSession: GARSession?
+    // GAREarth lives on GARFrame (not GARSession) in ARCore 1.54+, so we
+    // cache the latest frame produced by gar.update(arFrame) for HUD reads.
+    private var lastGARFrame: GARFrame?
 
     // MARK: - Tracking metrics
 
@@ -211,6 +214,7 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
         if let gar = garSession {
             do {
                 let garFrame = try gar.update(frame)
+                lastGARFrame = garFrame
                 // Streetscape geometries snapshot for HUD.
                 let count = garFrame.streetscapeGeometries?.count ?? 0
                 if count > 0, firstStreetscapeAt == nil {
@@ -269,34 +273,31 @@ final class SpikeAViewController: UIViewController, ARSessionDelegate {
         }
         lines.append("")
 
-        // Google Geospatial
-        if let gar = garSession {
-            // gar.earth can be nil in some SDK versions before the session
-            // is ready; treat as transient and print a placeholder rather
-            // than crashing on a force-unwrap (Playbook §4.5).
-            if let earth = gar.earth {
-                lines.append("GAR.Earth.state: \(earth.earthState)")
-                if earth.earthState == GAREarthState.enabled, garEarthFirstEnabledAt == nil {
-                    garEarthFirstEnabledAt = Date()
-                }
-                if let t = garEarthFirstEnabledAt {
-                    lines.append(String(format: "  enabled at: +%.1fs", t.timeIntervalSince(start)))
-                }
-                if let xform = earth.cameraGeospatialTransform {
-                    lines.append(String(format: "  yaw accuracy: %.1f°", xform.orientationYawAccuracy))
-                    lines.append(String(format: "  horizontal accuracy: %.1f m", xform.horizontalAccuracy))
-                } else {
-                    lines.append("  camera transform: nil")
-                }
+        // Google Geospatial — earth lives on GARFrame in ARCore 1.54+,
+        // not on GARSession. We read it from the latest cached GARFrame.
+        if garSession == nil {
+            lines.append("GARSession: NOT INITIALIZED")
+        } else if let earth = lastGARFrame?.earth {
+            lines.append("GAR.Earth.state: \(earth.earthState)")
+            if earth.earthState == GAREarthState.enabled, garEarthFirstEnabledAt == nil {
+                garEarthFirstEnabledAt = Date()
+            }
+            if let t = garEarthFirstEnabledAt {
+                lines.append(String(format: "  enabled at: +%.1fs", t.timeIntervalSince(start)))
+            }
+            if let xform = earth.cameraGeospatialTransform {
+                lines.append(String(format: "  yaw accuracy: %.1f°", xform.orientationYawAccuracy))
+                lines.append(String(format: "  horizontal accuracy: %.1f m", xform.horizontalAccuracy))
             } else {
-                lines.append("GAR.Earth: not ready yet")
+                lines.append("  camera transform: nil")
             }
             lines.append("Streetscape geometries: \(lastStreetscapeCount)")
             if let t = firstStreetscapeAt {
                 lines.append(String(format: "  first arrived at: +%.1fs", t.timeIntervalSince(start)))
             }
         } else {
-            lines.append("GARSession: NOT INITIALIZED")
+            lines.append("GAR.Earth: not ready yet")
+            lines.append("Streetscape geometries: \(lastStreetscapeCount)")
         }
 
         // Pass criteria
