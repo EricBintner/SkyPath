@@ -101,6 +101,8 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     private var spikeMenuPresented = false
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        let spikeEnv = ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] ?? "<nil>"
+        print("🎯 SPIKE gate: SHOW_SPIKE_MENU=\(spikeEnv) presented=\(spikeMenuPresented)")
         guard ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] == "1" else { return }
         guard !spikeMenuPresented else { return }
         spikeMenuPresented = true
