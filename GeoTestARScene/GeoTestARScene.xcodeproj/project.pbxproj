@@ -114,6 +114,7 @@
 			buildPhases = (
 				15C5BE4F2DB9562300D36E75 /* Sources */,
 				15C5BE502DB9562300D36E75 /* Frameworks */,
+				BEEFCAFE2DB9562300D36E75 /* Copy shared data from webgl-component */,
 				15C5BE512DB9562300D36E75 /* Resources */,
 			);
 			buildRules = (
@@ -251,6 +252,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BEEFCAFE2DB9562300D36E75 /* Copy shared data from webgl-component */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy shared data from webgl-component";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nSRC=\"${SRCROOT}/../webgl-component\"\nDST=\"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Models\"\nmkdir -p \"$DST\"\ncp \"$SRC/models_to_place.json\" \"$DST/\"\ncp -R \"$SRC/skypath_models/\"*.glb \"$DST/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		15C5BE4F2DB9562300D36E75 /* Sources */ = {

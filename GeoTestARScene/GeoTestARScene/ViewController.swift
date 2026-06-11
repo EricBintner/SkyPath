@@ -566,7 +566,7 @@ extension ARModelLocation {
     // Get sequence from original JSON using the ID
     static func getSequenceFor(id: String) -> Int {
         // Try to load the JSON file
-        guard let jsonURL = Bundle.main.url(forResource: "models_to_place", withExtension: "json"),
+        guard let jsonURL = Bundle.main.url(forResource: "models_to_place", withExtension: "json", subdirectory: "Models"),
               let jsonData = try? Data(contentsOf: jsonURL),
               let jsonArray = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
             return Int.max

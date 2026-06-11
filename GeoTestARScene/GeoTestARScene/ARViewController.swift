@@ -357,8 +357,11 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     
     // MARK: - Location Data
     private func loadLocationData() {
+        // Canonical placement data is webgl-component/models_to_place.json,
+        // copied into the bundle's Models/ folder by the "Copy shared data
+        // from webgl-component" build phase (see SHARED_DATA.md).
         let jsonFileName = "models_to_place"
-        guard let jsonURL = Bundle.main.url(forResource: jsonFileName, withExtension: "json") else {
+        guard let jsonURL = Bundle.main.url(forResource: jsonFileName, withExtension: "json", subdirectory: "Models") else {
             updateStatus("ERROR: Locations JSON file NOT FOUND.")
             return
         }
