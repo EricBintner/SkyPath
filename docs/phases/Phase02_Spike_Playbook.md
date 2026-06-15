@@ -40,23 +40,21 @@ Free quota is 1,000 sessions/min and 100,000 requests/min — plenty for the spi
 
 ### 0.4 Store the API key (gitignored)
 
-`*.local.xcconfig` is already gitignored. Wire the key in four small steps:
+The ARCore API key is read from the generated `Info.plist` at runtime. The project is already wired to pull it from a local, gitignored xcconfig:
 
-1. **Create the folder if missing** (it's not in git):
-   ```bash
-   mkdir -p GeoTestARScene/xcconfigs
-   ```
-2. **Create the file** `GeoTestARScene/xcconfigs/APIKeys.local.xcconfig` with:
-   ```
-   ARCORE_API_KEY = YOUR_KEY_HERE
-   ```
-3. **Wire the xcconfig to the target's build configurations** (Xcode UI):
-   - Project navigator → click the **project** (top-level "GeoTestARScene", blue icon, not the target).
-   - **Info** tab → **Configurations** section.
-   - For both **Debug** and **Release**, under the **GeoTestARScene** target column, click the dropdown and select `APIKeys.local`. If the file isn't listed, add it to the project first (File → Add Files…), then it appears in the dropdown.
-4. **Expose to runtime via Info.plist**:
-   - GeoTestARScene target → **Info** tab.
-   - Add a row: Key = `ARCORE_API_KEY`, Type = `String`, Value = `$(ARCORE_API_KEY)`. The `$(…)` syntax pulls from the xcconfig at build time.
+- `GeoTestARScene/xcconfigs/APIKeys.local.xcconfig` is already added to the **GeoTestARScene** target's Debug and Release configurations.
+- The directory has its own `.gitignore` (`*`) as defense-in-depth, so even renamed key files can't be committed by accident.
+- The root `.gitignore` also ignores `*.local.xcconfig`.
+
+**What you do:**
+
+1. Create an iOS-restricted **API key** in Google Cloud Console (not OAuth / service account):
+   - APIs & Services → Credentials → Create credentials → **API key**.
+   - Application restrictions → **iOS apps** → bundle ID `com.ericbintner.GeoTestARScene`.
+   - API restrictions → **ARCore API** only.
+2. Open `GeoTestARScene/xcconfigs/APIKeys.local.xcconfig`.
+3. Replace `YOUR_KEY_HERE` with the key string.
+4. Build and run. The key is injected into the generated `Info.plist` as `ARCORE_API_KEY`.
 
 The spike code reads `Bundle.main.object(forInfoDictionaryKey: "ARCORE_API_KEY") as? String`. Quick-test alternative (don't commit): paste the key inline at the `// HACK:` line in `SpikeAViewController.swift`.
 
