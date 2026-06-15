@@ -445,18 +445,23 @@ class ViewController: UIViewController, ARViewControllerDelegate, LocationsViewC
             updateButtonAppearance(activeButton: infoButton)
         }
         
-        // Handle web view resource management when switching to/from Cesium web view
-        if currentViewState == .listView && viewState != .listView {
-            // Leaving web view - pause web content
-            print("Leaving Cesium web view - pausing content")
-            if locationsViewController != nil {
-                locationsViewController.pauseWebContent()
-            }
-        } else if viewState == .listView && currentViewState != .listView {
-            // Entering web view - resume web content
-            print("Entering Cesium web view - resuming content")
-            if locationsViewController != nil {
-                locationsViewController.resumeWebContent()
+        // DEV: WebGL resource management is dev-only scaffolding. When the
+        // Info-tab toggle is off, the web view runs without explicit
+        // pause/resume calls (its WKWebView continues running in the
+        // background — production-shaped behavior). See DevTools.swift.
+        if DevTools.isEnabled {
+            if currentViewState == .listView && viewState != .listView {
+                // Leaving web view - pause web content
+                print("Leaving Cesium web view - pausing content")
+                if locationsViewController != nil {
+                    locationsViewController.pauseWebContent()
+                }
+            } else if viewState == .listView && currentViewState != .listView {
+                // Entering web view - resume web content
+                print("Entering Cesium web view - resuming content")
+                if locationsViewController != nil {
+                    locationsViewController.resumeWebContent()
+                }
             }
         }
         

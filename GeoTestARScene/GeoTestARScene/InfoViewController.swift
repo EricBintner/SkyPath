@@ -82,26 +82,75 @@ class InfoViewController: UIViewController {
         helpTextLabel.textColor = .white
         helpTextLabel.numberOfLines = 0
         contentView.addSubview(helpTextLabel)
-        
+
+        // DEV: developer-tools toggle. Deletable section — gates the
+        // spike menu entry point and the WebGL resource-management
+        // calls on DevTools.isEnabled. Remove with the rest of the
+        // DEV-ONLY scaffolding (see DevTools.swift).
+        let devToolsRow = UIView()
+        devToolsRow.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(devToolsRow)
+
+        let devToolsLabel = UILabel()
+        devToolsLabel.translatesAutoresizingMaskIntoConstraints = false
+        devToolsLabel.text = "Developer Tools"
+        devToolsLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        devToolsLabel.textColor = UIColor.white.withAlphaComponent(0.85)
+        devToolsRow.addSubview(devToolsLabel)
+
+        let devToolsHint = UILabel()
+        devToolsHint.translatesAutoresizingMaskIntoConstraints = false
+        devToolsHint.text = "Spike menu + WebGL resource manager"
+        devToolsHint.font = .systemFont(ofSize: 11)
+        devToolsHint.textColor = UIColor.white.withAlphaComponent(0.55)
+        devToolsRow.addSubview(devToolsHint)
+
+        let devToolsSwitch = UISwitch()
+        devToolsSwitch.translatesAutoresizingMaskIntoConstraints = false
+        devToolsSwitch.isOn = DevTools.isEnabled
+        devToolsSwitch.addTarget(self, action: #selector(devToolsToggled(_:)), for: .valueChanged)
+        devToolsRow.addSubview(devToolsSwitch)
+
         // Position everything
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
             titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            
+
             versionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
             versionLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            
+
             descriptionLabel.topAnchor.constraint(equalTo: versionLabel.bottomAnchor, constant: 30),
             descriptionLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             descriptionLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            
+
             helpTitleLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 40),
             helpTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            
+
             helpTextLabel.topAnchor.constraint(equalTo: helpTitleLabel.bottomAnchor, constant: 20),
             helpTextLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             helpTextLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            helpTextLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
+
+            devToolsRow.topAnchor.constraint(equalTo: helpTextLabel.bottomAnchor, constant: 48),
+            devToolsRow.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            devToolsRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            devToolsRow.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+
+            devToolsLabel.topAnchor.constraint(equalTo: devToolsRow.topAnchor),
+            devToolsLabel.leadingAnchor.constraint(equalTo: devToolsRow.leadingAnchor),
+            devToolsLabel.trailingAnchor.constraint(lessThanOrEqualTo: devToolsSwitch.leadingAnchor, constant: -12),
+
+            devToolsHint.topAnchor.constraint(equalTo: devToolsLabel.bottomAnchor, constant: 2),
+            devToolsHint.leadingAnchor.constraint(equalTo: devToolsRow.leadingAnchor),
+            devToolsHint.trailingAnchor.constraint(lessThanOrEqualTo: devToolsSwitch.leadingAnchor, constant: -12),
+            devToolsHint.bottomAnchor.constraint(equalTo: devToolsRow.bottomAnchor),
+
+            devToolsSwitch.centerYAnchor.constraint(equalTo: devToolsRow.centerYAnchor),
+            devToolsSwitch.trailingAnchor.constraint(equalTo: devToolsRow.trailingAnchor),
         ])
+    }
+
+    // DEV: developer-tools toggle handler.
+    @objc private func devToolsToggled(_ sender: UISwitch) {
+        DevTools.isEnabled = sender.isOn
     }
 }

@@ -84,6 +84,10 @@ class LocationsViewController: UIViewController, WKNavigationDelegate {
     }
     
     // MARK: - Web Content Management
+    // DEV: the four methods below (releaseWebGL/activateWebGL and
+    // pauseWebContent/resumeWebContent) are Phase 02 instrumentation,
+    // gated by DevTools.isEnabled at their call sites in
+    // ViewController.swift. See DevTools.swift for the removal contract.
 
     /// Frees the Cesium WebGL GPU/memory by navigating the web view to about:blank.
     /// The WebContent process releases its graphics resources. Reverse with activateWebGL().
