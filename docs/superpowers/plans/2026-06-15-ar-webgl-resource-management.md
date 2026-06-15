@@ -284,3 +284,22 @@ while AR is active.
   commit; left in place here to keep this change focused.
 - The temporary on-screen WebGL diagnostics in `main.js` remain useful for Step 6 and should
   be removed as part of Phase 03, not here.
+
+## Deferred future work — automated tests (TODO, separate effort)
+
+This change is verified by compile + on-device manual checks because the project has no
+test target. To make the resource policy regression-proof later, do this as its own plan:
+
+- [ ] **Add an iOS unit-test target** (`GeoTestARSceneTests`) to the Xcode project.
+- [ ] **Extract the destination→action decision** from `switchToView` into a pure function,
+      e.g. `func resourceActions(for destination: ViewState, from current: ViewState) -> ResourceActions`
+      where `ResourceActions` is a small struct of booleans
+      (`releaseAR`, `activateAR`, `releaseWebGL`, `activateWebGL`, `pauseARCamera`).
+      `switchToView` then just executes the returned actions. This isolates the policy so it
+      is testable without UIKit/ARKit/WebKit.
+- [ ] **Unit-test `resourceActions`** for all destination × current-state combinations against
+      the trigger-rule table in the spec (e.g. `.arView` → `releaseWebGL && activateAR`;
+      `.infoView` from `.arView` → only `pauseARCamera`; `.mapView` → `releaseAR && releaseWebGL`).
+- [ ] **Unit-test the `isReleased` flag transitions** on a `LocationsViewController` double
+      (release sets it true; activate from released reloads and clears it; activate when not
+      released is a no-op).
