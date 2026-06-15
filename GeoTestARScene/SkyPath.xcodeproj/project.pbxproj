@@ -32,9 +32,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		15C5BE532DB9562300D36E75 /* GeoTestARScene.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GeoTestARScene.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		15C5BE652DB9562400D36E75 /* GeoTestARSceneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeoTestARSceneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		15C5BE6F2DB9562400D36E75 /* GeoTestARSceneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeoTestARSceneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C5BE532DB9562300D36E75 /* SkyPath.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkyPath.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C5BE652DB9562400D36E75 /* SkyPathTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SkyPathTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C5BE6F2DB9562400D36E75 /* SkyPathUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SkyPathUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.local.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -92,7 +92,7 @@
 				15C5BE552DB9562300D36E75 /* GeoTestARScene */,
 				15C5BE682DB9562400D36E75 /* GeoTestARSceneTests */,
 				15C5BE722DB9562400D36E75 /* GeoTestARSceneUITests */,
-				15C5BE822DB9562400D36E75 /* GeoTestARScene/xcconfigs */,
+				15C5BE822DB9562400D36E75 /* xcconfigs */,
 				15C5BE542DB9562300D36E75 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -100,27 +100,27 @@
 		15C5BE542DB9562300D36E75 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				15C5BE532DB9562300D36E75 /* GeoTestARScene.app */,
-				15C5BE652DB9562400D36E75 /* GeoTestARSceneTests.xctest */,
-				15C5BE6F2DB9562400D36E75 /* GeoTestARSceneUITests.xctest */,
+				15C5BE532DB9562300D36E75 /* SkyPath.app */,
+				15C5BE652DB9562400D36E75 /* SkyPathTests.xctest */,
+				15C5BE6F2DB9562400D36E75 /* SkyPathUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		15C5BE822DB9562400D36E75 /* GeoTestARScene/xcconfigs */ = {
+		15C5BE822DB9562400D36E75 /* xcconfigs */ = {
 			isa = PBXGroup;
 			children = (
 				15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */,
 			);
-			path = GeoTestARScene/xcconfigs;
+			path = xcconfigs;
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		15C5BE522DB9562300D36E75 /* GeoTestARScene */ = {
+		15C5BE522DB9562300D36E75 /* SkyPath */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 15C5BE792DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARScene" */;
+			buildConfigurationList = 15C5BE792DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPath" */;
 			buildPhases = (
 				15C5BE4F2DB9562300D36E75 /* Sources */,
 				15C5BE502DB9562300D36E75 /* Frameworks */,
@@ -134,7 +134,7 @@
 			fileSystemSynchronizedGroups = (
 				15C5BE552DB9562300D36E75 /* GeoTestARScene */,
 			);
-			name = GeoTestARScene;
+			name = SkyPath;
 			packageProductDependencies = (
 				1532BCA12FD9E0F40070903A /* ARCoreAugmentedFaces */,
 				1532BCA32FD9E0F40070903A /* ARCoreCloudAnchors */,
@@ -143,12 +143,12 @@
 				1532BCA92FD9E0F40070903A /* ARCoreSemantics */,
 			);
 			productName = GeoTestARScene;
-			productReference = 15C5BE532DB9562300D36E75 /* GeoTestARScene.app */;
+			productReference = 15C5BE532DB9562300D36E75 /* SkyPath.app */;
 			productType = "com.apple.product-type.application";
 		};
-		15C5BE642DB9562400D36E75 /* GeoTestARSceneTests */ = {
+		15C5BE642DB9562400D36E75 /* SkyPathTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 15C5BE7C2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARSceneTests" */;
+			buildConfigurationList = 15C5BE7C2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPathTests" */;
 			buildPhases = (
 				15C5BE612DB9562400D36E75 /* Sources */,
 				15C5BE622DB9562400D36E75 /* Frameworks */,
@@ -162,16 +162,16 @@
 			fileSystemSynchronizedGroups = (
 				15C5BE682DB9562400D36E75 /* GeoTestARSceneTests */,
 			);
-			name = GeoTestARSceneTests;
+			name = SkyPathTests;
 			packageProductDependencies = (
 			);
 			productName = GeoTestARSceneTests;
-			productReference = 15C5BE652DB9562400D36E75 /* GeoTestARSceneTests.xctest */;
+			productReference = 15C5BE652DB9562400D36E75 /* SkyPathTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		15C5BE6E2DB9562400D36E75 /* GeoTestARSceneUITests */ = {
+		15C5BE6E2DB9562400D36E75 /* SkyPathUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 15C5BE7F2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARSceneUITests" */;
+			buildConfigurationList = 15C5BE7F2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPathUITests" */;
 			buildPhases = (
 				15C5BE6B2DB9562400D36E75 /* Sources */,
 				15C5BE6C2DB9562400D36E75 /* Frameworks */,
@@ -185,11 +185,11 @@
 			fileSystemSynchronizedGroups = (
 				15C5BE722DB9562400D36E75 /* GeoTestARSceneUITests */,
 			);
-			name = GeoTestARSceneUITests;
+			name = SkyPathUITests;
 			packageProductDependencies = (
 			);
 			productName = GeoTestARSceneUITests;
-			productReference = 15C5BE6F2DB9562400D36E75 /* GeoTestARSceneUITests.xctest */;
+			productReference = 15C5BE6F2DB9562400D36E75 /* SkyPathUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -215,7 +215,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 15C5BE4E2DB9562300D36E75 /* Build configuration list for PBXProject "GeoTestARScene" */;
+			buildConfigurationList = 15C5BE4E2DB9562300D36E75 /* Build configuration list for PBXProject "SkyPath" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -232,9 +232,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				15C5BE522DB9562300D36E75 /* GeoTestARScene */,
-				15C5BE642DB9562400D36E75 /* GeoTestARSceneTests */,
-				15C5BE6E2DB9562400D36E75 /* GeoTestARSceneUITests */,
+				15C5BE522DB9562300D36E75 /* SkyPath */,
+				15C5BE642DB9562400D36E75 /* SkyPathTests */,
+				15C5BE6E2DB9562400D36E75 /* SkyPathUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -312,12 +312,12 @@
 /* Begin PBXTargetDependency section */
 		15C5BE672DB9562400D36E75 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 15C5BE522DB9562300D36E75 /* GeoTestARScene */;
+			target = 15C5BE522DB9562300D36E75 /* SkyPath */;
 			targetProxy = 15C5BE662DB9562400D36E75 /* PBXContainerItemProxy */;
 		};
 		15C5BE712DB9562400D36E75 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 15C5BE522DB9562300D36E75 /* GeoTestARScene */;
+			target = 15C5BE522DB9562300D36E75 /* SkyPath */;
 			targetProxy = 15C5BE702DB9562400D36E75 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -525,7 +525,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GeoTestARScene.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GeoTestARScene";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SkyPath.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SkyPath";
 			};
 			name = Debug;
 		};
@@ -544,7 +544,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GeoTestARScene.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GeoTestARScene";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SkyPath.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SkyPath";
 			};
 			name = Release;
 		};
@@ -585,7 +585,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		15C5BE4E2DB9562300D36E75 /* Build configuration list for PBXProject "GeoTestARScene" */ = {
+		15C5BE4E2DB9562300D36E75 /* Build configuration list for PBXProject "SkyPath" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				15C5BE772DB9562400D36E75 /* Debug */,
@@ -594,7 +594,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		15C5BE792DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARScene" */ = {
+		15C5BE792DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPath" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				15C5BE7A2DB9562400D36E75 /* Debug */,
@@ -603,7 +603,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		15C5BE7C2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARSceneTests" */ = {
+		15C5BE7C2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPathTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				15C5BE7D2DB9562400D36E75 /* Debug */,
@@ -612,7 +612,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		15C5BE7F2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "GeoTestARSceneUITests" */ = {
+		15C5BE7F2DB9562400D36E75 /* Build configuration list for PBXNativeTarget "SkyPathUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				15C5BE802DB9562400D36E75 /* Debug */,
