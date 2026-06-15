@@ -93,22 +93,43 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         sceneView.session.run(configuration)
     }
 
-    // SPIKE: present the M02.0 spike menu instead of the normal AR flow when
-    // SHOW_SPIKE_MENU=1 is set in the Xcode scheme's Run > Arguments >
-    // Environment Variables. Default-off so day-to-day builds run normally.
+    // SPIKE: when SHOW_SPIKE_MENU=1 is set in the Xcode scheme's Run >
+    // Arguments > Environment Variables, overlay a small floating debug button
+    // on the normal AR screen. Tapping it opens the M02.0 spike menu; the
+    // normal app stays visible and usable underneath. Default-off so
+    // day-to-day builds run normally.
     // grep "// SPIKE:" to find all spike-related code for cleanup later.
     // See docs/phases/Phase02_Spike_Playbook.md.
-    private var spikeMenuPresented = false
+    private var spikeButtonAdded = false
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         let spikeEnv = ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] ?? "<nil>"
-        print("🎯 SPIKE gate: SHOW_SPIKE_MENU=\(spikeEnv) presented=\(spikeMenuPresented)")
+        print("🎯 SPIKE gate: SHOW_SPIKE_MENU=\(spikeEnv) buttonAdded=\(spikeButtonAdded)")
         guard ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] == "1" else { return }
-        guard !spikeMenuPresented else { return }
-        spikeMenuPresented = true
+        guard !spikeButtonAdded else { return }
+        spikeButtonAdded = true
+
+        let spikeButton = UIButton(type: .system)
+        spikeButton.setTitle("🧪 Spikes", for: .normal)
+        spikeButton.setTitleColor(.white, for: .normal)
+        spikeButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.85)
+        spikeButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        spikeButton.layer.cornerRadius = 10
+        spikeButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
+        spikeButton.translatesAutoresizingMaskIntoConstraints = false
+        spikeButton.addTarget(self, action: #selector(presentSpikeMenu), for: .touchUpInside)
+        view.addSubview(spikeButton)
+
+        NSLayoutConstraint.activate([
+            spikeButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            spikeButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+        ])
+    }
+
+    @objc private func presentSpikeMenu() {
         let menu = SpikeMenuViewController()
         menu.modalPresentationStyle = .fullScreen
-        present(menu, animated: false, completion: nil)
+        present(menu, animated: true, completion: nil)
     }
     
     override func viewWillDisappear(_ animated: Bool) {

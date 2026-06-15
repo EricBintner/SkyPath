@@ -32,7 +32,16 @@ final class SpikeMenuViewController: UIViewController {
         let buttonB = makeButton("Spike B — Renderer Bake-Off", action: #selector(launchB))
         let buttonC = makeButton("Spike C — Sliding Baseline", action: #selector(launchC))
 
-        let stack = UIStackView(arrangedSubviews: [title, subtitle, buttonA, buttonB, buttonC])
+        let closeButton = UIButton(type: .system)
+        closeButton.setTitle("Close — Back to App", for: .normal)
+        closeButton.setTitleColor(.white, for: .normal)
+        closeButton.backgroundColor = UIColor.darkGray.withAlphaComponent(0.85)
+        closeButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
+        closeButton.layer.cornerRadius = 10
+        closeButton.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        closeButton.addTarget(self, action: #selector(closeMenu), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [title, subtitle, buttonA, buttonB, buttonC, closeButton])
         stack.axis = .vertical
         stack.spacing = 16
         stack.alignment = .fill
@@ -61,6 +70,8 @@ final class SpikeMenuViewController: UIViewController {
     @objc private func launchA() { push(SpikeAViewController()) }
     @objc private func launchB() { push(SpikeBViewController()) }
     @objc private func launchC() { push(SpikeCViewController()) }
+
+    @objc private func closeMenu() { dismiss(animated: true, completion: nil) }
 
     private func push(_ vc: UIViewController) {
         vc.modalPresentationStyle = .fullScreen
