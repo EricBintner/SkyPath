@@ -8,10 +8,13 @@
 //  Procedure in Phase02_Spike_Playbook.md §2. Pick the winner; record
 //  result in Phase02_Spike_Results.md.
 //
-//  This file ships as a SCAFFOLD. The two render paths are stubbed with
-//  detailed TODOs because the configuration depends on Spike A's outcome
-//  (the ARSession config to pair with GARSession). Fill in once Spike A
-//  is recorded.
+//  Both render paths consume the same GARStreetscapeGeometry stream:
+//    * Triangle mesh comes in as GARMesh (vertices + triangle indices),
+//      with a world-space meshTransform.
+//    * Three magenta debug cubes are placed at +50/+80/+120 m along the
+//      camera's forward axis the first frame streetscape geometries
+//      arrive, so the user can walk around and see them get occluded.
+//    * Mesh rebuilds are throttled to ≤4 Hz per geometry id.
 //
 
 import UIKit
@@ -25,16 +28,47 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
     private enum RenderMode: Int { case sceneKit = 0, realityKit = 1 }
     private var mode: RenderMode = .sceneKit
 
+    // MARK: - Chrome
+
     private let modeSelector = UISegmentedControl(items: ["SceneKit", "RealityKit"])
     private let hudLabel = UILabel()
     private let dismissButton = UIButton(type: .system)
 
-    // SceneKit container
+    // MARK: - AR containers
+
     private let sceneView = ARSCNView()
-    // RealityKit container
     private let realityView = ARView(frame: .zero)
 
+    // MARK: - GARSession
+
     private var garSession: GARSession?
+
+    // MARK: - Render state (cleared on mode switch)
+
+    private var scnStreetscapeNodes: [UUID: SCNNode] = [:]
+    private var rkStreetscapeEntities: [UUID: ModelEntity] = [:]
+    private var rkRootAnchor: AnchorEntity?
+
+    // Mesh rebuilds throttled to 4 Hz max per geometry id.
+    private let rebuildInterval: TimeInterval = 0.25
+    private var lastBuiltAt: [UUID: TimeInterval] = [:]
+
+    private let debugDistances: [Float] = [50, 80, 120]
+    private var debugCubesPlaced = false
+
+    private var lastGeometryCount = 0
+    private var lastCameraTrackingState = "initializing"
+
+    private lazy var depthOnlyMaterial: SCNMaterial = {
+        let m = SCNMaterial()
+        m.writesToDepthBuffer = true
+        m.readsFromDepthBuffer = true
+        m.colorBufferWriteMask = []
+        m.isDoubleSided = false
+        return m
+    }()
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,6 +89,8 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
         realityView.session.pause()
     }
 
+    // MARK: - View setup
+
     private func setupViewsForCurrentMode() {
         // Pause the outgoing session so it doesn't keep running in the
         // background and skew the bake-off's FPS/thermal numbers.
@@ -62,6 +98,8 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
         realityView.session.pause()
         sceneView.removeFromSuperview()
         realityView.removeFromSuperview()
+        clearRenderState()
+
         let container: UIView
         switch mode {
         case .sceneKit:
@@ -69,16 +107,35 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
             sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             sceneView.session.delegate = self
             sceneView.delegate = self
+            sceneView.showsStatistics = true
             view.addSubview(sceneView)
             container = sceneView
         case .realityKit:
             realityView.frame = view.bounds
             realityView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             realityView.session.delegate = self
+            realityView.debugOptions.insert(.showStatistics)
+            let root = AnchorEntity(world: matrix_identity_float4x4)
+            realityView.scene.addAnchor(root)
+            rkRootAnchor = root
             view.addSubview(realityView)
             container = realityView
         }
         view.sendSubviewToBack(container)
+    }
+
+    private func clearRenderState() {
+        scnStreetscapeNodes.values.forEach { $0.removeFromParentNode() }
+        scnStreetscapeNodes.removeAll()
+        rkStreetscapeEntities.values.forEach { $0.removeFromParent() }
+        rkStreetscapeEntities.removeAll()
+        if let root = rkRootAnchor {
+            realityView.scene.removeAnchor(root)
+        }
+        rkRootAnchor = nil
+        lastBuiltAt.removeAll()
+        debugCubesPlaced = false
+        lastGeometryCount = 0
     }
 
     private func setupChrome() {
@@ -91,7 +148,7 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
         hudLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         hudLabel.textColor = .white
         hudLabel.backgroundColor = UIColor.black.withAlphaComponent(0.65)
-        hudLabel.text = "Spike B — TODO: fill in render paths"
+        hudLabel.text = "Spike B — starting…"
 
         dismissButton.setTitle("Done", for: .normal)
         dismissButton.setTitleColor(.white, for: .normal)
@@ -127,6 +184,8 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
 
     @objc private func dismissTapped() { dismiss(animated: true) }
 
+    // MARK: - GARSession
+
     private func initGARSession() {
         guard let apiKey = SpikeAViewController.exposedAPIKey() else {
             hudLabel.text = "ERROR: ARCORE_API_KEY missing. See Playbook §0.4."
@@ -149,14 +208,11 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
     }
 
     private func startSession() {
-        // TODO: spike-b configuration
-        // Use whichever ARSessionConfiguration Spike A confirmed works:
-        //   - If Spike A passed: ARGeoTrackingConfiguration
-        //   - If Spike A failed and fallback passed: ARWorldTrackingConfiguration
+        // ARGeoTrackingConfiguration when supported; fallback to
+        // ARWorldTrackingConfiguration so the spike still produces
+        // numbers on devices Apple doesn't cover.
         let config: ARConfiguration = {
             if ARGeoTrackingConfiguration.isSupported {
-                // ARGeoTrackingConfiguration.worldAlignment is unavailable in
-                // iOS 18+ (forced to .gravityAndHeading by the framework).
                 return ARGeoTrackingConfiguration()
             } else {
                 let c = ARWorldTrackingConfiguration()
@@ -164,7 +220,6 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
                 return c
             }
         }()
-
         switch mode {
         case .sceneKit:
             sceneView.session.run(config, options: [.removeExistingAnchors, .resetTracking])
@@ -176,65 +231,207 @@ final class SpikeBViewController: UIViewController, ARSessionDelegate, ARSCNView
     // MARK: - ARSessionDelegate
 
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        // Feed GARSession; harvest streetscape geometries.
-        guard let gar = garSession else { return }
+        lastCameraTrackingState = String(describing: frame.camera.trackingState)
+        guard let gar = garSession else {
+            updateHUD()
+            return
+        }
         do {
             let garFrame = try gar.update(frame)
-            renderStreetscapeGeometries(garFrame.streetscapeGeometries ?? [])
+            let geometries = garFrame.streetscapeGeometries ?? []
+            lastGeometryCount = geometries.count
+            renderStreetscapeGeometries(geometries)
+            if !debugCubesPlaced, !geometries.isEmpty {
+                placeDebugCubes(frame: frame)
+                debugCubesPlaced = true
+            }
         } catch {
             NSLog("[SpikeB] GARSession.update threw: \(error)")
         }
+        updateHUD()
     }
 
-    // MARK: - Rendering (the actual experiment)
+    // MARK: - Render dispatch
 
     private func renderStreetscapeGeometries(_ geometries: [GARStreetscapeGeometry]) {
-        switch mode {
-        case .sceneKit:   renderSceneKit(geometries)
-        case .realityKit: renderRealityKit(geometries)
+        let now = CACurrentMediaTime()
+        let incoming = Set(geometries.map(\.identifier))
+        for geom in geometries where geom.trackingState == .tracking {
+            switch mode {
+            case .sceneKit:   renderSceneKit(geom: geom, now: now)
+            case .realityKit: renderRealityKit(geom: geom, now: now)
+            }
+        }
+        sweepDead(incoming: incoming)
+    }
+
+    private func sweepDead(incoming: Set<UUID>) {
+        for (id, node) in scnStreetscapeNodes where !incoming.contains(id) {
+            node.removeFromParentNode()
+            scnStreetscapeNodes.removeValue(forKey: id)
+            lastBuiltAt.removeValue(forKey: id)
+        }
+        for (id, entity) in rkStreetscapeEntities where !incoming.contains(id) {
+            entity.removeFromParent()
+            rkStreetscapeEntities.removeValue(forKey: id)
+            lastBuiltAt.removeValue(forKey: id)
         }
     }
 
-    private func renderSceneKit(_ geometries: [GARStreetscapeGeometry]) {
-        // TODO: spike-b SceneKit path
-        //
-        // For each GARStreetscapeGeometry in `geometries`:
-        //   1. Convert geom.mesh (vertices + triangleIndices) into SCNGeometry:
-        //        let positions = SCNGeometrySource(vertices: vertexArray)
-        //        let element = SCNGeometryElement(indices: indexArray, primitiveType: .triangles)
-        //        let scnGeom = SCNGeometry(sources: [positions], elements: [element])
-        //   2. Apply a depth-only SCNMaterial:
-        //        let mat = SCNMaterial()
-        //        mat.writesToDepthBuffer = true
-        //        mat.readsFromDepthBuffer = true
-        //        mat.colorBufferWriteMask = []
-        //        mat.isDoubleSided = false
-        //        scnGeom.materials = [mat]
-        //   3. Wrap in SCNNode, set .simdTransform = geom.meshTransform, .renderingOrder = -1.
-        //   4. Track existing geometries by GARStreetscapeGeometry.identifier so you
-        //      update/remove rather than duplicate.
-        //
-        // Then place three debug magenta cubes at +50m, +80m, +120m along
-        // camera forward (post-localization) to visually verify occlusion.
-        //
-        // Throttle mesh rebuilds to ~4 Hz max per geometry.
-        hudLabel.text = "Spike B — SceneKit\n\nStreetscape count: \(geometries.count)\n\n(TODO: render path)"
+    // MARK: - SceneKit render
+
+    private func renderSceneKit(geom: GARStreetscapeGeometry, now: TimeInterval) {
+        let id = geom.identifier
+        let lastBuild = lastBuiltAt[id] ?? -.infinity
+        let shouldRebuild = (now - lastBuild) >= rebuildInterval
+
+        if let existing = scnStreetscapeNodes[id] {
+            existing.simdTransform = geom.meshTransform
+            if shouldRebuild, let scnGeom = makeSCNGeometry(from: geom.mesh) {
+                scnGeom.materials = [depthOnlyMaterial]
+                existing.geometry = scnGeom
+                lastBuiltAt[id] = now
+            }
+            return
+        }
+        guard let scnGeom = makeSCNGeometry(from: geom.mesh) else { return }
+        scnGeom.materials = [depthOnlyMaterial]
+        let node = SCNNode(geometry: scnGeom)
+        node.simdTransform = geom.meshTransform
+        node.renderingOrder = -1
+        sceneView.scene.rootNode.addChildNode(node)
+        scnStreetscapeNodes[id] = node
+        lastBuiltAt[id] = now
     }
 
-    private func renderRealityKit(_ geometries: [GARStreetscapeGeometry]) {
-        // TODO: spike-b RealityKit path
-        //
-        // For each GARStreetscapeGeometry:
-        //   1. Build a MeshResource from geom.mesh — use MeshResource.generate(from:)
-        //      with a MeshDescriptor populated from vertices/triangleIndices.
-        //   2. ModelComponent with materials = [OcclusionMaterial()].
-        //   3. Place as a ModelEntity under an AnchorEntity at world position
-        //      derived from geom.meshTransform.
-        //   4. Track existing entities by GARStreetscapeGeometry.identifier.
-        //
-        // Place three debug magenta cubes at the same +50m, +80m, +120m
-        // positions for an apples-to-apples comparison.
-        hudLabel.text = "Spike B — RealityKit\n\nStreetscape count: \(geometries.count)\n\n(TODO: render path)"
+    private func makeSCNGeometry(from mesh: GARMesh) -> SCNGeometry? {
+        let vertexCount = Int(mesh.vertexCount)
+        let triangleCount = Int(mesh.triangleCount)
+        guard vertexCount > 0, triangleCount > 0 else { return nil }
+
+        // GARVertex is { float x, y, z } packed (12 bytes), so we can
+        // hand its raw buffer to SCNGeometrySource as-is.
+        let vertexData = Data(bytes: mesh.vertices,
+                              count: vertexCount * MemoryLayout<GARVertex>.size)
+        let indexData = Data(bytes: mesh.triangles,
+                             count: triangleCount * MemoryLayout<GARIndexTriangle>.size)
+
+        let source = SCNGeometrySource(
+            data: vertexData,
+            semantic: .vertex,
+            vectorCount: vertexCount,
+            usesFloatComponents: true,
+            componentsPerVector: 3,
+            bytesPerComponent: MemoryLayout<Float>.size,
+            dataOffset: 0,
+            dataStride: MemoryLayout<GARVertex>.size
+        )
+        let element = SCNGeometryElement(
+            data: indexData,
+            primitiveType: .triangles,
+            primitiveCount: triangleCount,
+            bytesPerIndex: MemoryLayout<UInt32>.size
+        )
+        return SCNGeometry(sources: [source], elements: [element])
+    }
+
+    // MARK: - RealityKit render
+
+    private func renderRealityKit(geom: GARStreetscapeGeometry, now: TimeInterval) {
+        guard let root = rkRootAnchor else { return }
+        let id = geom.identifier
+        let lastBuild = lastBuiltAt[id] ?? -.infinity
+        let shouldRebuild = (now - lastBuild) >= rebuildInterval
+
+        if let existing = rkStreetscapeEntities[id] {
+            existing.transform = Transform(matrix: geom.meshTransform)
+            if shouldRebuild, let resource = try? makeMeshResource(from: geom.mesh) {
+                existing.model = ModelComponent(mesh: resource, materials: [OcclusionMaterial()])
+                lastBuiltAt[id] = now
+            }
+            return
+        }
+        guard let resource = try? makeMeshResource(from: geom.mesh) else { return }
+        let entity = ModelEntity(mesh: resource, materials: [OcclusionMaterial()])
+        entity.transform = Transform(matrix: geom.meshTransform)
+        root.addChild(entity)
+        rkStreetscapeEntities[id] = entity
+        lastBuiltAt[id] = now
+    }
+
+    private func makeMeshResource(from mesh: GARMesh) throws -> MeshResource? {
+        let vertexCount = Int(mesh.vertexCount)
+        let triangleCount = Int(mesh.triangleCount)
+        guard vertexCount > 0, triangleCount > 0 else { return nil }
+
+        var positions: [SIMD3<Float>] = []
+        positions.reserveCapacity(vertexCount)
+        for i in 0..<vertexCount {
+            let v = mesh.vertices[i]
+            positions.append(SIMD3<Float>(v.x, v.y, v.z))
+        }
+        var indices: [UInt32] = []
+        indices.reserveCapacity(triangleCount * 3)
+        for i in 0..<triangleCount {
+            let t = mesh.triangles[i].indices
+            indices.append(t.0)
+            indices.append(t.1)
+            indices.append(t.2)
+        }
+        var desc = MeshDescriptor(name: "streetscape")
+        desc.positions = MeshBuffers.Positions(positions)
+        desc.primitives = .triangles(indices)
+        return try MeshResource.generate(from: [desc])
+    }
+
+    // MARK: - Debug cubes
+
+    private func placeDebugCubes(frame: ARFrame) {
+        let t = frame.camera.transform
+        let origin = SIMD3<Float>(t.columns.3.x, t.columns.3.y, t.columns.3.z)
+        // ARKit camera forward is -Z column.
+        let forward = -SIMD3<Float>(t.columns.2.x, t.columns.2.y, t.columns.2.z)
+
+        switch mode {
+        case .sceneKit:
+            let box = SCNBox(width: 0.5, height: 0.5, length: 0.5, chamferRadius: 0)
+            let mat = SCNMaterial()
+            mat.diffuse.contents = UIColor.magenta
+            mat.lightingModel = .constant
+            box.materials = [mat]
+            for d in debugDistances {
+                let node = SCNNode(geometry: box)
+                node.simdPosition = origin + forward * d
+                sceneView.scene.rootNode.addChildNode(node)
+            }
+        case .realityKit:
+            guard let root = rkRootAnchor else { return }
+            let mesh = MeshResource.generateBox(size: 0.5)
+            let mat = SimpleMaterial(color: .magenta, isMetallic: false)
+            for d in debugDistances {
+                let entity = ModelEntity(mesh: mesh, materials: [mat])
+                entity.transform = Transform(translation: origin + forward * d)
+                root.addChild(entity)
+            }
+        }
+        NSLog("[SpikeB] Placed \(debugDistances.count) debug cubes at distances \(debugDistances) origin=\(origin) forward=\(forward)")
+    }
+
+    // MARK: - HUD
+
+    private func updateHUD() {
+        let modeName = mode == .sceneKit ? "SceneKit (depth-only SCNMaterial)" : "RealityKit (OcclusionMaterial)"
+        let active = mode == .sceneKit ? scnStreetscapeNodes.count : rkStreetscapeEntities.count
+        var lines: [String] = []
+        lines.append("Spike B — \(modeName)")
+        lines.append("Streetscape count: \(lastGeometryCount)")
+        lines.append("Active occluders: \(active)")
+        lines.append("Debug cubes placed: \(debugCubesPlaced)")
+        lines.append("AR.camera: \(lastCameraTrackingState)")
+        lines.append("")
+        lines.append("Walk forward 50–120 m. Magenta cubes should")
+        lines.append("disappear behind buildings as you pass them.")
+        hudLabel.text = lines.joined(separator: "\n")
     }
 }
 
