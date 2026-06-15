@@ -35,6 +35,7 @@
 		15C5BE532DB9562300D36E75 /* GeoTestARScene.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GeoTestARScene.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		15C5BE652DB9562400D36E75 /* GeoTestARSceneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeoTestARSceneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		15C5BE6F2DB9562400D36E75 /* GeoTestARSceneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeoTestARSceneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.local.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -91,6 +92,7 @@
 				15C5BE552DB9562300D36E75 /* GeoTestARScene */,
 				15C5BE682DB9562400D36E75 /* GeoTestARSceneTests */,
 				15C5BE722DB9562400D36E75 /* GeoTestARSceneUITests */,
+				15C5BE822DB9562400D36E75 /* GeoTestARScene/xcconfigs */,
 				15C5BE542DB9562300D36E75 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -104,6 +106,14 @@
 			);
 			name = Products;
 			sourceTree = "<group>";
+		};
+		15C5BE822DB9562400D36E75 /* GeoTestARScene/xcconfigs */ = {
+			isa = PBXGroup;
+			children = (
+				15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */,
+			);
+			path = GeoTestARScene/xcconfigs;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -434,6 +444,7 @@
 		};
 		15C5BE7A2DB9562400D36E75 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -457,7 +468,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.GeoTestARScene;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.SkyPath;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -467,6 +478,7 @@
 		};
 		15C5BE7B2DB9562400D36E75 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 15C5BE832DB9562400D36E75 /* APIKeys.local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -490,7 +502,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.GeoTestARScene;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericbintner.SkyPath;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

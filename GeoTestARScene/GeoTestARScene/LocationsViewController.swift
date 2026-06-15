@@ -9,6 +9,9 @@ class LocationsViewController: UIViewController, WKNavigationDelegate {
     
     // UI Components
     private var webView: WKWebView!
+
+    // True when the web view has been navigated to about:blank to free WebGL memory.
+    private var isReleased = false
     
     // Data
     private var locations: [ARModelLocation] = []
@@ -81,7 +84,25 @@ class LocationsViewController: UIViewController, WKNavigationDelegate {
     }
     
     // MARK: - Web Content Management
-    
+
+    /// Frees the Cesium WebGL GPU/memory by navigating the web view to about:blank.
+    /// The WebContent process releases its graphics resources. Reverse with activateWebGL().
+    func releaseWebGL() {
+        guard webView != nil, !isReleased else { return }
+        print("Releasing WebGL resources (about:blank)")
+        webView.load(URLRequest(url: URL(string: "about:blank")!))
+        isReleased = true
+    }
+
+    /// Reloads the Cesium page if it was previously released. No-op on first activation,
+    /// since viewDidLoad already loaded the URL (isReleased starts false).
+    func activateWebGL() {
+        guard isReleased else { return }
+        print("Activating WebGL resources (reloading \(defaultURL))")
+        loadWebsite(url: defaultURL)
+        isReleased = false
+    }
+
     /// Called when leaving the web view tab
     func pauseWebContent() {
         print("Pausing web content resources")

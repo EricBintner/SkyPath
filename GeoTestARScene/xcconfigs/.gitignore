@@ -1,0 +1,4 @@
+# Ignore every file in this directory by default.
+# API keys and other secrets must never be committed.
+*
+!.gitignore
