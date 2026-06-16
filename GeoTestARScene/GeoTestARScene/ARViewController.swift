@@ -82,6 +82,15 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             name: UIDevice.orientationDidChangeNotification,
             object: nil
         )
+
+        // SPIKE: react to the Info tab's Developer Tools toggle so the
+        // floating Spikes button appears/disappears immediately.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(devToolsDidChange),
+            name: DevTools.didChangeNotification,
+            object: nil
+        )
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -93,22 +102,35 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         sceneView.session.run(configuration)
     }
 
-    // SPIKE: when SHOW_SPIKE_MENU=1 is set in the Xcode scheme's Run >
-    // Arguments > Environment Variables, overlay a small floating debug button
-    // on the normal AR screen. Tapping it opens the M02.0 spike menu; the
-    // normal app stays visible and usable underneath. Default-off so
-    // day-to-day builds run normally.
+    // SPIKE: floating Spikes button overlay on the AR screen, gated by
+    // DevTools.isEnabled (toggled from the Info tab). Default off, so
+    // day-to-day builds and production-shaped runs don't see it.
+    // Observes DevTools.didChangeNotification so toggling in the Info tab
+    // shows/hides the button immediately on return to AR.
     // grep "// SPIKE:" to find all spike-related code for cleanup later.
     // See docs/phases/Phase02_Spike_Playbook.md.
-    private var spikeButtonAdded = false
+    private var spikeButton: UIButton?
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        let spikeEnv = ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] ?? "<nil>"
-        print("🎯 SPIKE gate: SHOW_SPIKE_MENU=\(spikeEnv) buttonAdded=\(spikeButtonAdded)")
-        guard ProcessInfo.processInfo.environment["SHOW_SPIKE_MENU"] == "1" else { return }
-        guard !spikeButtonAdded else { return }
-        spikeButtonAdded = true
+        refreshSpikeButton()
+    }
 
+    @objc private func devToolsDidChange() {
+        refreshSpikeButton()
+    }
+
+    private func refreshSpikeButton() {
+        let shouldShow = DevTools.isEnabled
+        if shouldShow {
+            if spikeButton == nil { addSpikeButton() }
+            spikeButton?.isHidden = false
+        } else {
+            spikeButton?.isHidden = true
+        }
+    }
+
+    private func addSpikeButton() {
         // SF Symbol "testtube.2" instead of an emoji; uses UIButton.Configuration
         // which also drops the iOS-15-deprecated contentEdgeInsets API.
         var config = UIButton.Configuration.filled()
@@ -123,15 +145,16 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         config.cornerStyle = .medium
         config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
 
-        let spikeButton = UIButton(configuration: config)
-        spikeButton.translatesAutoresizingMaskIntoConstraints = false
-        spikeButton.addTarget(self, action: #selector(presentSpikeMenu), for: .touchUpInside)
-        view.addSubview(spikeButton)
+        let button = UIButton(configuration: config)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(presentSpikeMenu), for: .touchUpInside)
+        view.addSubview(button)
 
         NSLayoutConstraint.activate([
-            spikeButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            spikeButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
+        spikeButton = button
     }
 
     @objc private func presentSpikeMenu() {

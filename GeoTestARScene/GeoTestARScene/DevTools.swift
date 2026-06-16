@@ -30,12 +30,20 @@ import Foundation
 enum DevTools {
     private static let key = "DevTools.isEnabled"
 
+    /// Posted whenever isEnabled changes. Observers update their UI in
+    /// reaction (e.g. ARViewController shows/hides the floating Spikes
+    /// button). Object is nil; userInfo is empty.
+    static let didChangeNotification = Notification.Name("DevTools.didChange")
+
     /// Runtime master switch for Phase 02 instrumentation: the spike
     /// menu entry point and the WebGL resource-management calls.
     /// Toggled from the Info tab. Persists across launches via
     /// UserDefaults. Defaults to off (production-shaped behavior).
     static var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
+        set {
+            UserDefaults.standard.set(newValue, forKey: key)
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
     }
 }
