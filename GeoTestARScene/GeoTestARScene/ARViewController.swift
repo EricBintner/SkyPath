@@ -109,13 +109,21 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         guard !spikeButtonAdded else { return }
         spikeButtonAdded = true
 
-        let spikeButton = UIButton(type: .system)
-        spikeButton.setTitle("🧪 Spikes", for: .normal)
-        spikeButton.setTitleColor(.white, for: .normal)
-        spikeButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.85)
-        spikeButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        spikeButton.layer.cornerRadius = 10
-        spikeButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
+        // SF Symbol "testtube.2" instead of an emoji; uses UIButton.Configuration
+        // which also drops the iOS-15-deprecated contentEdgeInsets API.
+        var config = UIButton.Configuration.filled()
+        var title = AttributedString("Spikes")
+        title.font = .systemFont(ofSize: 15, weight: .semibold)
+        config.attributedTitle = title
+        config.image = UIImage(systemName: "testtube.2")
+        config.imagePadding = 6
+        config.imagePlacement = .leading
+        config.baseBackgroundColor = UIColor.systemBlue.withAlphaComponent(0.85)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .medium
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
+
+        let spikeButton = UIButton(configuration: config)
         spikeButton.translatesAutoresizingMaskIntoConstraints = false
         spikeButton.addTarget(self, action: #selector(presentSpikeMenu), for: .touchUpInside)
         view.addSubview(spikeButton)
@@ -340,7 +348,11 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Progress view in stats container
         statsProgressView = UIProgressView(progressViewStyle: .default)
         statsProgressView.translatesAutoresizingMaskIntoConstraints = false
-        statsProgressView.progress = 0.5
+        // Progress tracks loaded-nearby-models / total-nearby. Before
+        // updateNearbyModels runs there are zero nearby loaded, so the
+        // bar starts empty. (Was previously hardcoded to 0.5, which
+        // looked stuck at half during the "Loaded N locations" status.)
+        statsProgressView.progress = 0.0
         statsProgressView.progressTintColor = .white
         statsProgressView.trackTintColor = UIColor.white.withAlphaComponent(0.3)
         statsContainerView.addSubview(statsProgressView)
