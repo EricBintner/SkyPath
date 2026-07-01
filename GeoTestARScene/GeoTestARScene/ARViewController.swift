@@ -1082,6 +1082,10 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
 // MARK: - SCNNode Extensions
 extension SCNNode {
+    /// World-space position (extracted from `presentation.worldTransform`).
+    /// Valid as root-relative position ONLY while `earthFrame` is identity
+    /// (M02.2 invariant); once M02.5 applies a correction to `earthFrame`,
+    /// callers needing root-relative position must use `convertPosition`.
     var worldPosition: SCNVector3 {
         // Get the world transform matrix
         let transform = self.presentation.worldTransform
