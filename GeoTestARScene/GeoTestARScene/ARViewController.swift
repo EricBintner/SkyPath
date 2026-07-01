@@ -648,6 +648,8 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
                 node.addChildNode(planeNode)
                 planeNodes[planeAnchor.identifier] = planeNode
             }
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            occludersFrame?.addChildNode(node)
             return // We've handled the plane anchor, so we can exit.
         }
         if let meshAnchor = anchor as? ARMeshAnchor {
@@ -656,6 +658,8 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             let meshNode = SCNNode(geometry: meshGeometry)
             meshNodes[meshAnchor.identifier] = meshNode
             node.addChildNode(meshNode)
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            occludersFrame?.addChildNode(node)
             return
         }
 
@@ -683,6 +687,9 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             node.addChildNode(placeholder)
             // Still update loadedLocations so we know we tried to load this anchor.
             loadedLocations[locationID] = locationData
+            node.name = geoAnchor.identifier.uuidString
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            anchorsFrame?.addChildNode(node)
             return
         }
         
@@ -694,6 +701,9 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         
         // Add the content node to the ARKit-provided node for this anchor.
         node.addChildNode(contentNode)
+        node.name = geoAnchor.identifier.uuidString
+        if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+        anchorsFrame?.addChildNode(node)
         
         // Update our tracking dictionary with the ARModelLocation instance.
         // This ensures loadedLocations correctly stores the ARModelLocation object.
