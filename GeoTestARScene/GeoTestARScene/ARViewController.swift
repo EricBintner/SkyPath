@@ -65,7 +65,23 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         material.isDoubleSided = true
         return material
     }()
-    
+
+    // MARK: - earthFrame hierarchy (M02.2)
+    // earthFrame is a child of sceneView.scene.rootNode. Its transform MUST stay
+    // identity until the M02.5 transform spec (MERGED-005): ARKit writes each
+    // anchor node's transform as if parented to root, so an identity earthFrame
+    // makes reparenting visually jump-free. The didSet enforces the invariant.
+    private var m02_5CorrectionEnabled = false
+    private var earthFrame: SCNNode? {
+        didSet {
+            if let earthFrame, !m02_5CorrectionEnabled {
+                EarthFrameHierarchy.assertIdentity(earthFrame)
+            }
+        }
+    }
+    private var anchorsFrame: SCNNode?
+    private var occludersFrame: SCNNode?
+
     // MARK: - View Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -346,7 +362,17 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Set AR view options
         sceneView.automaticallyUpdatesLighting = true
         sceneView.autoenablesDefaultLighting = true
-        
+
+        // earthFrame hierarchy (M02.2). Idempotent: build once, guard against re-add
+        // so a second setupARView() cannot orphan a second hierarchy.
+        if earthFrame?.parent == nil {
+            let hierarchy = EarthFrameHierarchy.make()
+            earthFrame = hierarchy.earthFrame
+            anchorsFrame = hierarchy.anchorsFrame
+            occludersFrame = hierarchy.occludersFrame
+            sceneView.scene.rootNode.addChildNode(hierarchy.earthFrame)
+        }
+
         print("🎥 ARSCNView created and constrained with Auto Layout")
     }
     
