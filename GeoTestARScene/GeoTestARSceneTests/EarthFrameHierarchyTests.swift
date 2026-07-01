@@ -30,4 +30,23 @@ struct EarthFrameHierarchyTests {
 
         #expect(EarthFrameHierarchy.isIdentity(h.earthFrame) == false)
     }
+
+    @Test func reparentUnderIdentityParentPreservesWorldTransform() {
+        // A non-identity child (translation) parented under an identity "old parent".
+        var childTransform = matrix_identity_float4x4
+        childTransform.columns.3 = SIMD4<Float>(2, 0, -1, 1)
+        let child = SCNNode()
+        child.simdTransform = childTransform
+
+        let oldParent = SCNNode()          // identity
+        oldParent.addChildNode(child)
+        let worldBefore = child.simdWorldTransform
+
+        // Reparent under an identity earthFrame (what EarthFrameHierarchy.make builds).
+        let earthFrame = SCNNode()         // identity
+        earthFrame.addChildNode(child)     // reparent
+        #expect(child.parent === earthFrame)
+
+        #expect(child.simdWorldTransform == worldBefore)
+    }
 }
