@@ -19,4 +19,15 @@ struct EarthFrameHierarchyTests {
         #expect(h.anchorsFrame.simdTransform == matrix_identity_float4x4)
         #expect(h.occludersFrame.simdTransform == matrix_identity_float4x4)
     }
+
+    @Test func isIdentity_detectsNonIdentity() {
+        let h = EarthFrameHierarchy.make()
+        #expect(EarthFrameHierarchy.isIdentity(h.earthFrame) == true)
+
+        var t = matrix_identity_float4x4
+        t.columns.3 = SIMD4<Float>(1, 2, 3, 1) // translation → non-identity
+        h.earthFrame.simdTransform = t
+
+        #expect(EarthFrameHierarchy.isIdentity(h.earthFrame) == false)
+    }
 }
