@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import GeoTestARScene
+@testable import SkyPath
 
 struct GeoTestARSceneTests {
 

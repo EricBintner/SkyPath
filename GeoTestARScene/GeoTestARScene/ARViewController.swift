@@ -65,7 +65,23 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         material.isDoubleSided = true
         return material
     }()
-    
+
+    // MARK: - earthFrame hierarchy (M02.2)
+    // earthFrame is a child of sceneView.scene.rootNode. Its transform MUST stay
+    // identity until the M02.5 transform spec (MERGED-005): ARKit writes each
+    // anchor node's transform as if parented to root, so an identity earthFrame
+    // makes reparenting visually jump-free. The didSet enforces the invariant.
+    private var m02_5CorrectionEnabled = false
+    private var earthFrame: SCNNode? {
+        didSet {
+            if let earthFrame, !m02_5CorrectionEnabled {
+                EarthFrameHierarchy.assertIdentity(earthFrame)
+            }
+        }
+    }
+    private var anchorsFrame: SCNNode?
+    private var occludersFrame: SCNNode?
+
     // MARK: - View Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -99,6 +115,7 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Run a basic session to show the camera feed. Geo-tracking will be started by the user.
         let configuration = ARWorldTrackingConfiguration()
         configuration.worldAlignment = .gravityAndHeading
+        clearEarthFrameChildrenAndTracking()
         sceneView.session.run(configuration)
     }
 
@@ -254,6 +271,7 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
                 print("⚠️ Scene reconstruction not supported on this device.")
             }
             
+            clearEarthFrameChildrenAndTracking()
             sceneView.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
             sceneView.session.delegate = self
             return // Skip the rest of the geo-tracking setup
@@ -281,10 +299,12 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Determine if we should reset tracking based on session history
         if shouldResetTracking() {
             print("▶️ Starting fresh AR session with tracking reset")
+            clearEarthFrameChildrenAndTracking()
             sceneView.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
         } else {
             print("▶️ Resuming AR session without tracking reset")
             // Don't reset tracking - this preserves the coordinate system
+            clearEarthFrameChildrenAndTracking()
             sceneView.session.run(configuration, options: [.removeExistingAnchors])
         }
         // --- END KEY LOGIC ---
@@ -346,7 +366,17 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Set AR view options
         sceneView.automaticallyUpdatesLighting = true
         sceneView.autoenablesDefaultLighting = true
-        
+
+        // earthFrame hierarchy (M02.2). Idempotent: build once, guard against re-add
+        // so a second setupARView() cannot orphan a second hierarchy.
+        if earthFrame?.parent == nil {
+            let hierarchy = EarthFrameHierarchy.make()
+            earthFrame = hierarchy.earthFrame
+            anchorsFrame = hierarchy.anchorsFrame
+            occludersFrame = hierarchy.occludersFrame
+            sceneView.scene.rootNode.addChildNode(hierarchy.earthFrame)
+        }
+
         print("🎥 ARSCNView created and constrained with Auto Layout")
     }
     
@@ -605,6 +635,20 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         print("📱 Added geo anchor for: \(location.id) at \(location.coordinate)")
     }
     
+    /// Removes all reparented anchor/occluder nodes and resets node-tracking dicts
+    /// (M02.2 D3). Called from every session reset/restart/failure path because
+    /// ARKit's auto-removal of reparented (non-root-parented) nodes is undocumented.
+    /// Also resets the high-accuracy reload state so a restart is a clean fresh start.
+    private func clearEarthFrameChildrenAndTracking() {
+        anchorsFrame?.childNodes.forEach { $0.removeFromParentNode() }
+        occludersFrame?.childNodes.forEach { $0.removeFromParentNode() }
+        loadedLocations.removeAll()
+        planeNodes.removeAll()
+        meshNodes.removeAll()
+        highAccuracyModelPlaced = false
+        highAccuracyFrameCounter = 0
+    }
+
         // MARK: - ARSCNViewDelegate
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if let planeAnchor = anchor as? ARPlaneAnchor {
@@ -622,6 +666,8 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
                 node.addChildNode(planeNode)
                 planeNodes[planeAnchor.identifier] = planeNode
             }
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            occludersFrame?.addChildNode(node)
             return // We've handled the plane anchor, so we can exit.
         }
         if let meshAnchor = anchor as? ARMeshAnchor {
@@ -630,6 +676,8 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             let meshNode = SCNNode(geometry: meshGeometry)
             meshNodes[meshAnchor.identifier] = meshNode
             node.addChildNode(meshNode)
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            occludersFrame?.addChildNode(node)
             return
         }
 
@@ -657,6 +705,9 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             node.addChildNode(placeholder)
             // Still update loadedLocations so we know we tried to load this anchor.
             loadedLocations[locationID] = locationData
+            node.name = geoAnchor.identifier.uuidString
+            if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+            anchorsFrame?.addChildNode(node)
             return
         }
         
@@ -668,6 +719,9 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         
         // Add the content node to the ARKit-provided node for this anchor.
         node.addChildNode(contentNode)
+        node.name = geoAnchor.identifier.uuidString
+        if let earthFrame { EarthFrameHierarchy.assertIdentity(earthFrame) }
+        anchorsFrame?.addChildNode(node)
         
         // Update our tracking dictionary with the ARModelLocation instance.
         // This ensures loadedLocations correctly stores the ARModelLocation object.
@@ -735,9 +789,17 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         guard let location = loadedLocations.removeValue(forKey: id) else {
             return
         }
+        // M02.2: node removal is unconditional and prevents earth_anchors ghosts.
+        // didRemove is the authoritative cleaner (it also calls removeFromParentNode).
+        // NOTE (carry-over, NOT fixed in M02.2): didAdd overwrites loadedLocations[id]
+        // with the bare allLocations entry (anchor == nil), so for placed models
+        // location.anchor is nil and session.remove is NOT called here — the anchor
+        // is left in the session. The deeper fix (preserve .anchor across the didAdd
+        // overwrite) is deferred; see spec §6.
         if let anchor = location.anchor {
             sceneView.session.remove(anchor: anchor)
-        } else if let node = location.node {
+        }
+        if let node = location.node {
             node.removeFromParentNode()
         }
     }
@@ -831,6 +893,10 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
             print("🗑️ LIDAR MESH: Removing mesh anchor: \(meshAnchor.identifier)")
             meshNodes.removeValue(forKey: meshAnchor.identifier)
         }
+        // Authoritative node removal for every anchor type. ARKit auto-removal of
+        // reparented nodes is undocumented, so remove explicitly. Idempotent: a
+        // no-op if ARKit already removed the node.
+        node.removeFromParentNode()
     }
     
     // MARK: - CLLocationManagerDelegate
@@ -840,6 +906,9 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     func session(_ session: ARSession, didFailWithError error: Error) {
         print("❌ AR Session error: \(error.localizedDescription)")
         updateStatus("AR Session error: \(error.localizedDescription)")
+        // A failed session is non-recoverable; clear reparented nodes and tracking
+        // (a fresh Start AR is required). M02.2 D3 — do not rely on ARKit auto-removal.
+        clearEarthFrameChildrenAndTracking()
     }
     
     func sessionWasInterrupted(_ session: ARSession) {
@@ -942,18 +1011,25 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
                         let twoClosestLocations = sortedLocations.prefix(2)
                         
                         if !twoClosestLocations.isEmpty {
-                            print("🎯 Top \(twoClosestLocations.count) closest locations found.")
+                            print("🎯 Top \(twoClosestLocations.count) closest locations.")
+                            // MERGED-009: high-accuracy hard reset still exists; full redesign deferred
+                            // — do not rely on this for drift correction. Set the flag BEFORE clearing so a
+                            // concurrently-dispatched updateNearbyModels (main queue) cannot pass its
+                            // !highAccuracyModelPlaced guard and re-add nodes during the clear window.
+                            highAccuracyModelPlaced = true
                             sceneView.session.currentFrame?.anchors.forEach { anchor in
                                 if anchor is ARGeoAnchor { sceneView.session.remove(anchor: anchor) }
                             }
                             loadedLocations.removeAll()
+                            // Self-cleaning (M02.2 D3): ARKit auto-removal of reparented nodes is
+                            // undocumented, so explicitly clear reparented geo content.
+                            anchorsFrame?.childNodes.forEach { $0.removeFromParentNode() }
                             print("🗑️ Removed all previous geo-anchors.")
-                            
+
                             for location in twoClosestLocations {
                                 print("📍 Placing high-accuracy model for: \(location.id)")
                                 loadModelAtLocation(location)
                             }
-                            highAccuracyModelPlaced = true
                         }
                     }
                     
@@ -1006,6 +1082,10 @@ class ARViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
 // MARK: - SCNNode Extensions
 extension SCNNode {
+    /// World-space position (extracted from `presentation.worldTransform`).
+    /// Valid as root-relative position ONLY while `earthFrame` is identity
+    /// (M02.2 invariant); once M02.5 applies a correction to `earthFrame`,
+    /// callers needing root-relative position must use `convertPosition`.
     var worldPosition: SCNVector3 {
         // Get the world transform matrix
         let transform = self.presentation.worldTransform
